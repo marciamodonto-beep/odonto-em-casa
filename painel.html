@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Dentista</title>
+
+<style>
+body {
+font-family: Arial, sans-serif;
+background: #eef2f8;
+margin: 0;
+color: #243454;
+}
+
+header {
+background: #243b80;
+color: white;
+padding: 25px;
+text-align: center;
+}
+
+main {
+max-width: 500px;
+margin: 30px auto;
+background: white;
+padding: 25px;
+border-radius: 10px;
+}
+
+button {
+width: 100%;
+padding: 15px;
+margin: 8px 0;
+background: #304db5;
+color: white;
+border: none;
+border-radius: 6px;
+font-size: 16px;
+cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>ODONTO EM CASA</h1>
+<p>Área do profissional</p>
+</header>
+
+<main id="painel" hidden>
+
+<h2>Bem-vindo ao seu painel!</h2>
+
+<p id="usuario"></p>
+
+<button disabled>Meu perfil profissional</button>
+
+<button disabled>Minha disponibilidade</button>
+
+<button disabled>Meus atendimentos</button>
+
+<button onclick="sair()">Sair da conta</button>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const supabaseUrl = "https://sbubucjwxgtckdwedose.supabase.co";
+
+const supabaseKey = "sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu";
+
+
+const clienteSupabase = window.supabase.createClient(
+supabaseUrl,
+supabaseKey
+);
+
+async function verificarLogin() {
+
+const { data, error } = await clienteSupabase.auth.getUser();
+
+if (error || !data.user) {
+window.location.replace("index.html");
+return;
+}
+
+document.getElementById("usuario").textContent =
+data.user.email;
+
+document.getElementById("painel").hidden = false;
+}
+
+async function sair() {
+const { error } = await clienteSupabase.auth.signOut();
+
+if (error) {
+alert("Não foi possível sair.");
+return;
+}
+
+window.location.replace("index.html");
+}
+
+verificarLogin();
+
+</script>
+
+</body>
+</html>
