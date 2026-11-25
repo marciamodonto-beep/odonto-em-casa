@@ -56,15 +56,15 @@ text-align: center;
 <main>
 <h2>Cadastro de dentistas</h2>
 
-<input placeholder="Nome completo" disabled>
-<input placeholder="Número do CRO" disabled>
-<input placeholder="Estado" disabled>
-<input placeholder="Cidade" disabled>
-<input placeholder="Especialidade" disabled>
-<input type="email" placeholder="E-mail" disabled>
-<input type="password" placeholder="Senha" disabled>
+<input id="nome" placeholder="Nome completo" required>
+<input id="cro" placeholder="Número do CRO" required>
+<input id="estado" placeholder="Estado" required>
+<input id="cidade" placeholder="Cidade" required>
+<input id="especialidade" placeholder="Especialidade" required>
+<input id="email" type="email" placeholder="E-mail" required>
+<input id="senha" type="password" placeholder="Senha" required>
 
-<button disabled>Criar minha conta</button>
+<button id="btnCadastro" type="button" disabled>Criar minha conta</button>
 
 <hr>
 
@@ -89,6 +89,33 @@ const clienteSupabase = window.supabase.createClient(
 supabaseUrl,
 supabaseKey
 );
+
+  async function cadastrarDentista() {
+const nome = document.getElementById("nome").value.trim();
+const cro = document.getElementById("cro").value.trim();
+const estado = document.getElementById("estado").value.trim();
+const cidade = document.getElementById("cidade").value.trim();
+const especialidade = document.getElementById("especialidade").value.trim();
+const email = document.getElementById("email").value.trim();
+const senha = document.getElementById("senha").value;
+
+if (!nome || !cro || !estado || !cidade || !especialidade || !email || !senha) {
+alert("Preencha todos os campos.");
+return;
+}
+
+    const { data, error } = await clienteSupabase.auth.signUp({
+email: email,
+password: senha
+});
+
+if (error) {
+alert("Não foi possível criar a conta.");
+return;
+}
+
+alert("Verifique seu e-mail para confirmar o cadastro.");
+}
 </script>
 </body>
 </html>
