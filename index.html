@@ -78,6 +78,18 @@ text-align: center;
 <p>Ambiente em configuração.</p>
 
 </main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseUrl = "https://sbubucjwxgtckdwedose.supabase.co";
+const supabaseKey = "sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu";
+
+const clienteSupabase = window.supabase.createClient(
+supabaseUrl,
+supabaseKey
+);
+</script>
 </body>
 </html>
 
