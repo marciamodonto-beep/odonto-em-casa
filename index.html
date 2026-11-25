@@ -106,7 +106,10 @@ return;
 
     const { data, error } = await clienteSupabase.auth.signUp({
 email: email,
-password: senha
+password: senha,
+options: {
+emailRedirectTo: "https://marciamodonto-beep.github.io/odonto-em-casa/"
+}
 });
 
 if (error) {
