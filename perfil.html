@@ -146,8 +146,9 @@ const clienteSupabase = window.supabase.createClient(
 "https://sbubucjwxgtckdwedose.supabase.co",
 "sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu"
 );
-
 let usuario;
+let perfilExistente = false;
+let fotoAtual = null;
 
 const campos = [
 "nome", "cro", "uf_cro",
@@ -173,7 +174,31 @@ elemento("formulario")
 .querySelectorAll("input, textarea, button")
 .forEach(campo => campo.disabled = true);
 }
+function habilitarEdicao() {
 
+bloquear();
+
+const editaveis = [
+"descricao",
+"estado",
+"cidade",
+"cidades_atendidas",
+"whatsapp",
+"instagram",
+"disponibilidade",
+"autorizacao_publicacao"
+];
+
+editaveis.forEach(id => {
+elemento(id).disabled = false;
+});
+
+elemento("autorizacao_publicacao").required = false;
+
+elemento("salvar").disabled = false;
+elemento("salvar").textContent = "Salvar alterações";
+
+}
 async function iniciar() {
 
 const { data, error } =
@@ -203,6 +228,9 @@ return;
 
 if (resultado.data) {
 
+perfilExistente = true;
+fotoAtual = resultado.data.foto_url ?? null;
+
 campos.forEach(id => {
 
 const campo = elemento(id);
@@ -221,7 +249,7 @@ campo.value = Array.isArray(valor)
 elemento("status").textContent =
 "Situação: " + resultado.data.status_aprovacao;
 
-bloquear();
+habilitarEdicao();
 
 } else {
 elemento("status").textContent =
@@ -263,7 +291,19 @@ perfil.uf_cro = perfil.uf_cro.toUpperCase();
 perfil.aprovado = false;
 perfil.status_aprovacao = "pendente";
 
-const { error } = await clienteSupabase
+const { error } = perfilExistente
+? await clienteSupabase.rpc("editar_meu_perfil", {
+p_descricao: perfil.descricao,
+p_estado: perfil.estado,
+p_cidade: perfil.cidade,
+p_cidades_atendidas: perfil.cidades_atendidas,
+p_whatsapp: perfil.whatsapp,
+p_instagram: perfil.instagram,
+p_foto_url: fotoAtual,
+p_disponibilidade: perfil.disponibilidade,
+p_autorizacao_publicacao: perfil.autorizacao_publicacao
+})
+: await clienteSupabase
 .from("dentistas")
 .insert(perfil);
 
@@ -273,12 +313,13 @@ elemento("salvar").disabled = false;
 return;
 }
 
-elemento("status").textContent =
-"Cadastro enviado. Aguardando análise.";
-
-bloquear();
-
+if (perfilExistente) {
+alert("Perfil atualizado com sucesso!");
+} else {
 alert("Cadastro enviado com sucesso!");
+}
+
+location.reload();
 
 });
 
