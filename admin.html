@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Administrativo - Odonto em Casa</title>
+
+<style>
+body {
+font-family: Arial, sans-serif;
+background: #eef2f8;
+margin: 0;
+color: #243454;
+}
+header {
+background: #243b80;
+color: white;
+padding: 25px;
+text-align: center;
+}
+main {
+max-width: 900px;
+margin: 25px auto;
+padding: 20px;
+}
+.card {
+background: white;
+padding: 25px;
+margin-bottom: 20px;
+border-radius: 10px;
+overflow-wrap: anywhere;
+}
+button {
+padding: 12px 20px;
+border: none;
+border-radius: 6px;
+color: white;
+background: #304db5;
+cursor: pointer;
+margin: 5px;
+}
+.aprovar {
+background: #218838;
+}
+.rejeitar {
+background: #c0392b;
+}
+button:disabled {
+opacity: 0.5;
+cursor: default;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>ODONTO EM CASA</h1>
+<p>Painel Administrativo</p>
+</header>
+
+<main>
+<p id="mensagem">Verificando acesso...</p>
+
+<section id="area" hidden>
+
+<h2>Cadastros pendentes</h2>
+
+<button onclick="carregar()">
+Atualizar lista
+</button>
+
+<button onclick="sair()">
+Sair da conta
+</button>
+
+<div id="lista"></div>
+
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const clienteSupabase = window.supabase.createClient(
+"https://sbubucjwxgtckdwedose.supabase.co",
+"sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu"
+);
+
+const mensagem = document.getElementById("mensagem");
+const area = document.getElementById("area");
+const lista = document.getElementById("lista");
+
+async function iniciar() {
+
+const { data, error } =
+await clienteSupabase.auth.getUser();
+
+if (error || !data.user) {
+location.replace("index.html");
+return;
+}
+
+const permissao = await clienteSupabase
+.rpc("eh_administrador");
+
+if (permissao.error || permissao.data !== true) {
+mensagem.textContent = "Acesso não autorizado.";
+return;
+}
+
+mensagem.textContent = "Área administrativa";
+area.hidden = false;
+
+await carregar();
+}
+
+function campo(card, titulo, valor) {
+
+const p = document.createElement("p");
+const forte = document.createElement("strong");
+
+forte.textContent = titulo + ": ";
+
+p.appendChild(forte);
+
+p.appendChild(document.createTextNode(
+Array.isArray(valor)
+? valor.join(", ")
+: valor || "Não informado"
+));
+
+card.appendChild(p);
+}
+
+async function carregar() {
+
+lista.textContent = "Carregando...";
+
+const { data, error } = await clienteSupabase
+.from("dentistas")
+.select("*")
+.eq("status_aprovacao", "pendente")
+.order("criado_em", { ascending: false });
+
+if (error) {
+lista.textContent = error.message;
+return;
+}
+
+lista.textContent = "";
+
+if (data.length === 0) {
+lista.textContent = "Nenhum cadastro pendente.";
+return;
+}
+
+data.forEach(dentista => {
+
+const card = document.createElement("div");
+card.className = "card";
+
+campo(card, "Nome", dentista.nome);
+campo(card, "CRO", dentista.cro);
+campo(card, "UF do CRO", dentista.uf_cro);
+campo(card, "Estado", dentista.estado);
+campo(card, "Cidade", dentista.cidade);
+campo(card, "Especialidades", dentista.especialidades);
+campo(card, "Habilitações", dentista.habilitacoes);
+campo(card, "Descrição", dentista.descricao);
+campo(card, "Cidades atendidas", dentista.cidades_atendidas);
+campo(card, "Serviços", dentista.servicos_oferecidos);
+campo(card, "Disponibilidade", dentista.disponibilidade);
+campo(card, "WhatsApp", dentista.whatsapp);
+campo(card, "Instagram", dentista.instagram);
+campo(card, "Situação", dentista.status_aprovacao);
+
+const aprovar = document.createElement("button");
+aprovar.textContent = "Aprovar cadastro";
+aprovar.className = "aprovar";
+
+aprovar.onclick = () =>
+alterar(dentista.usuario_id, true);
+
+const rejeitar = document.createElement("button");
+rejeitar.textContent = "Rejeitar cadastro";
+rejeitar.className = "rejeitar";
+
+rejeitar.onclick = () =>
+alterar(dentista.usuario_id, false);
+
+card.appendChild(aprovar);
+card.appendChild(rejeitar);
+
+lista.appendChild(card);
+
+});
+}
+
+async function alterar(usuarioId, aprovado) {
+
+const pergunta = aprovado
+? "Você conferiu o CRO e as informações profissionais?"
+: "Confirma a rejeição deste cadastro?";
+
+if (!confirm(pergunta)) return;
+
+const { data, error } = await clienteSupabase
+.from("dentistas")
+.update({
+aprovado: aprovado,
+status_aprovacao: aprovado ? "aprovado" : "rejeitado",
+data_verificacao_cro: aprovado
+? new Date().toISOString()
+: null
+})
+.eq("usuario_id", usuarioId)
+.eq("status_aprovacao", "pendente")
+.select("usuario_id");
+
+if (error) {
+alert("Erro: " + error.message);
+return;
+}
+
+if (!data || data.length === 0) {
+alert("Nenhum cadastro foi alterado.");
+return;
+}
+
+alert("Cadastro atualizado com sucesso!");
+
+await carregar();
+}
+
+async function sair() {
+await clienteSupabase.auth.signOut();
+location.replace("index.html");
+}
+
+iniciar();
+
+</script>
+</body>
+</html>
