@@ -131,7 +131,34 @@ Enviar cadastro para análise
 </button>
 
 </form>
+<section id="area_solicitacao" hidden>
 
+<h2>Alteração de qualificações profissionais</h2>
+
+<p>
+As alterações serão submetidas à análise administrativa.
+Mantenha as qualificações atuais que deseja preservar.
+</p>
+
+<label>Especialidades registradas</label>
+<textarea id="novas_especialidades"
+placeholder="Separe por vírgulas"></textarea>
+
+<label>Habilitações</label>
+<textarea id="novas_habilitacoes"
+placeholder="Separe por vírgulas"></textarea>
+
+<label>Serviços oferecidos</label>
+<textarea id="novos_servicos"
+placeholder="Separe por vírgulas"></textarea>
+
+<button type="button" id="enviar_solicitacao">
+Solicitar alteração de qualificações
+</button>
+
+<p id="situacao_solicitacao"></p>
+
+</section>
 <button onclick="location.href='painel.html'">
 Voltar ao painel
 </button>
@@ -175,6 +202,61 @@ elemento("formulario")
 .forEach(campo => campo.disabled = true);
 }
 function habilitarEdicao() {
+elemento("area_solicitacao").hidden = false;
+
+elemento("novas_especialidades").value =
+(resultado.data.especialidades || []).join(", ");
+
+elemento("novas_habilitacoes").value =
+(resultado.data.habilitacoes || []).join(", ");
+const { data: solicitacao, error: erroSolicitacao } =
+await clienteSupabase
+.from("solicitacoes_alteracao")
+.select("*")
+.eq("dentista_id", resultado.data.id)
+.order("criado_em", { ascending: false })
+.limit(1)
+.maybeSingle();
+
+if (erroSolicitacao) {
+
+elemento("situacao_solicitacao").textContent =
+"Não foi possível consultar as solicitações.";
+
+} else if (solicitacao) {
+
+const situacoes = {
+pendente: "Aguardando análise",
+aprovado: "Aprovada",
+reprovado: "Não aprovada"
+};
+
+elemento("situacao_solicitacao").textContent =
+"Última solicitação: " +
+situacoes[solicitacao.status] +
+(solicitacao.observacao_admin
+? " | Observação: " + solicitacao.observacao_admin
+: "");
+
+if (solicitacao.status === "pendente") {
+
+elemento("enviar_solicitacao").disabled = true;
+elemento("novas_especialidades").disabled = true;
+elemento("novas_habilitacoes").disabled = true;
+elemento("novos_servicos").disabled = true;
+
+elemento("novas_especialidades").value =
+solicitacao.especialidades.join(", ");
+
+elemento("novas_habilitacoes").value =
+solicitacao.habilitacoes.join(", ");
+
+elemento("novos_servicos").value =
+solicitacao.servicos_oferecidos.join(", ");
+}
+}
+elemento("novos_servicos").value =
+(resultado.data.servicos_oferecidos || []).join(", ");
 
 bloquear();
 
@@ -324,7 +406,54 @@ location.reload();
 });
 
 iniciar();
+elemento("enviar_solicitacao").addEventListener(
+"click", async function () {
 
+if (!perfilExistente) return;
+
+const separar = (texto) =>
+texto.split(",")
+.map(item => item.trim())
+.filter(Boolean);
+
+const botao = elemento("enviar_solicitacao");
+
+botao.disabled = true;
+
+try {
+
+const { error } = await clienteSupabase.rpc(
+"solicitar_alteracao_perfil",
+{
+p_especialidades: separar(
+elemento("novas_especialidades").value
+),
+p_habilitacoes: separar(
+elemento("novas_habilitacoes").value
+),
+p_servicos_oferecidos: separar(
+elemento("novos_servicos").value
+)
+}
+);
+
+if (error) {
+alert(
+error.code === "23505"
+? "Você já possui uma solicitação pendente."
+: "Não foi possível enviar a solicitação."
+);
+return;
+}
+
+alert("Solicitação enviada para análise!");
+location.reload();
+
+} finally {
+botao.disabled = false;
+}
+}
+);
 </script>
 
 </body>
