@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil Profissional - Odonto em Casa</title>
+
+<style>
+body {
+font-family: Arial, sans-serif;
+background: #eef2f8;
+margin: 0;
+color: #243454;
+}
+header {
+background: #243b80;
+color: white;
+padding: 25px;
+text-align: center;
+}
+main {
+max-width: 650px;
+margin: 25px auto;
+background: white;
+padding: 25px;
+border-radius: 10px;
+}
+label {
+display: block;
+margin-top: 15px;
+font-weight: bold;
+}
+input:not([type="checkbox"]), textarea {
+width: 100%;
+padding: 12px;
+margin-top: 6px;
+border: 1px solid #ccc;
+border-radius: 6px;
+box-sizing: border-box;
+}
+button {
+width: 100%;
+padding: 15px;
+margin-top: 20px;
+background: #304db5;
+color: white;
+border: none;
+border-radius: 6px;
+font-size: 16px;
+cursor: pointer;
+}
+button:disabled {
+opacity: 0.5;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>ODONTO EM CASA</h1>
+<p>Meu perfil profissional</p>
+</header>
+
+<main id="area" hidden>
+
+<h2>Cadastro profissional</h2>
+<p id="status"></p>
+
+<form id="formulario">
+
+<label>Nome completo</label>
+<input id="nome" required>
+
+<label>Número do CRO</label>
+<input id="cro" required>
+
+<label>UF do CRO</label>
+<input id="uf_cro" maxlength="2" required>
+
+<label>Especialidades registradas</label>
+<textarea id="especialidades"
+placeholder="Separe por vírgulas"></textarea>
+
+<label>Habilitações</label>
+<textarea id="habilitacoes"
+placeholder="Separe por vírgulas"></textarea>
+
+<label>Descrição profissional</label>
+<textarea id="descricao" rows="4"></textarea>
+
+<label>Estado de atendimento</label>
+<input id="estado" required>
+
+<label>Cidade principal</label>
+<input id="cidade" required>
+
+<label>Cidades atendidas</label>
+<textarea id="cidades_atendidas"
+placeholder="Separe por vírgulas"></textarea>
+
+<label>Serviços oferecidos</label>
+<textarea id="servicos_oferecidos"
+placeholder="Separe por vírgulas"></textarea>
+
+<label>Disponibilidade</label>
+<textarea id="disponibilidade"></textarea>
+
+<label>WhatsApp profissional</label>
+<input id="whatsapp" type="tel">
+
+<label>Instagram profissional</label>
+<input id="instagram">
+
+<label>
+<input type="checkbox"
+id="declaracao_veracidade" required>
+Declaro que as informações profissionais
+fornecidas são verdadeiras.
+</label>
+
+<label>
+<input type="checkbox"
+id="autorizacao_publicacao" required>
+Autorizo a publicação das informações
+do meu perfil profissional após aprovação.
+</label>
+
+<button id="salvar" type="submit">
+Enviar cadastro para análise
+</button>
+
+</form>
+
+<button onclick="location.href='painel.html'">
+Voltar ao painel
+</button>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const clienteSupabase = window.supabase.createClient(
+"https://sbubucjwxgtckdwedose.supabase.co",
+"sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu"
+);
+
+let usuario;
+
+const campos = [
+"nome", "cro", "uf_cro",
+"especialidades", "habilitacoes",
+"descricao", "estado", "cidade",
+"cidades_atendidas", "servicos_oferecidos",
+"disponibilidade", "whatsapp", "instagram",
+"declaracao_veracidade",
+"autorizacao_publicacao"
+];
+
+const listas = [
+"especialidades", "habilitacoes",
+"cidades_atendidas", "servicos_oferecidos"
+];
+
+function elemento(id) {
+return document.getElementById(id);
+}
+
+function bloquear() {
+elemento("formulario")
+.querySelectorAll("input, textarea, button")
+.forEach(campo => campo.disabled = true);
+}
+
+async function iniciar() {
+
+const { data, error } =
+await clienteSupabase.auth.getUser();
+
+if (error || !data.user) {
+location.replace("index.html");
+return;
+}
+
+usuario = data.user;
+
+const resultado = await clienteSupabase
+.from("dentistas")
+.select("*")
+.eq("usuario_id", usuario.id)
+.maybeSingle();
+
+elemento("area").hidden = false;
+
+if (resultado.error) {
+elemento("status").textContent =
+"Não foi possível consultar o cadastro.";
+bloquear();
+return;
+}
+
+if (resultado.data) {
+
+campos.forEach(id => {
+
+const campo = elemento(id);
+const valor = resultado.data[id];
+
+if (campo.type === "checkbox") {
+campo.checked = valor === true;
+} else {
+campo.value = Array.isArray(valor)
+? valor.join(", ")
+: valor ?? "";
+}
+
+});
+
+elemento("status").textContent =
+"Situação: " + resultado.data.status_aprovacao;
+
+bloquear();
+
+} else {
+elemento("status").textContent =
+"Preencha seu cadastro profissional.";
+}
+
+}
+
+elemento("formulario").addEventListener(
+"submit", async function(evento) {
+
+evento.preventDefault();
+
+if (!usuario) return;
+
+elemento("salvar").disabled = true;
+
+const perfil = {
+usuario_id: usuario.id
+};
+
+campos.forEach(id => {
+
+const campo = elemento(id);
+
+if (campo.type === "checkbox") {
+perfil[id] = campo.checked;
+} else if (listas.includes(id)) {
+perfil[id] = campo.value.split(",")
+.map(item => item.trim())
+.filter(Boolean);
+} else {
+perfil[id] = campo.value.trim();
+}
+
+});
+
+perfil.uf_cro = perfil.uf_cro.toUpperCase();
+perfil.aprovado = false;
+perfil.status_aprovacao = "pendente";
+
+const { error } = await clienteSupabase
+.from("dentistas")
+.insert(perfil);
+
+if (error) {
+alert("Não foi possível salvar: " + error.message);
+elemento("salvar").disabled = false;
+return;
+}
+
+elemento("status").textContent =
+"Cadastro enviado. Aguardando análise.";
+
+bloquear();
+
+alert("Cadastro enviado com sucesso!");
+
+});
+
+iniciar();
+
+</script>
+
+</body>
+</html>
