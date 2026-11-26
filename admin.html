@@ -210,7 +210,7 @@ const { data, error } = await clienteSupabase
 .from("dentistas")
 .update({
 aprovado: aprovado,
-status_aprovacao: aprovado ? "aprovado" : "rejeitado",
+status_aprovacao: aprovado ? "aprovado" : "reprovado",
 data_verificacao_cro: aprovado
 ? new Date().toISOString()
 : null
