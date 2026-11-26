@@ -75,7 +75,17 @@ Sair da conta
 </button>
 
 <div id="lista"></div>
+<hr>
 
+<h2>Solicitações de alteração de qualificações</h2>
+
+<p id="contador_solicitacoes"></p>
+
+<button onclick="carregarSolicitacoes()">
+Atualizar solicitações
+</button>
+
+<div id="lista_solicitacoes"></div>
 </section>
 </main>
 
@@ -114,6 +124,7 @@ mensagem.textContent = "Área administrativa";
 area.hidden = false;
 
 await carregar();
+  await carregarSolicitacoes();
 }
 
 function campo(card, titulo, valor) {
@@ -237,6 +248,94 @@ await carregar();
 async function sair() {
 await clienteSupabase.auth.signOut();
 location.replace("index.html");
+}
+async function carregarSolicitacoes() {
+const lista = document.getElementById("lista_solicitacoes");
+const contador = document.getElementById("contador_solicitacoes");
+
+lista.textContent = "Carregando solicitações...";
+
+const { data, error } = await clienteSupabase
+.from("solicitacoes_alteracao")
+.select("*, dentistas(nome, cro, uf_cro)")
+.eq("status", "pendente")
+.order("criado_em", { ascending: true });
+
+if (error) {
+contador.textContent = "";
+lista.textContent = "Erro: " + error.message;
+return;
+}
+
+contador.textContent = "Solicitações pendentes: " + data.length;
+
+lista.textContent = "";
+
+if (data.length === 0) {
+lista.textContent = "Nenhuma solicitação pendente.";
+return;
+}
+
+data.forEach(solicitacao => {
+const item = document.createElement("div");
+item.className = "card";
+
+const dentista = solicitacao.dentistas || {};
+
+campo(item, "Nome", dentista.nome || "Não identificado");
+campo(item, "CRO", dentista.cro || "");
+campo(item, "UF do CRO", dentista.uf_cro || "");
+
+campo(item, "Especialidades solicitadas",
+solicitacao.especialidades.join(", "));
+
+campo(item, "Habilitações solicitadas",
+solicitacao.habilitacoes.join(", "));
+
+campo(item, "Serviços solicitados",
+solicitacao.servicos_oferecidos.join(", "));
+const aprovar = document.createElement("button");
+aprovar.textContent = "Aprovar solicitação";
+aprovar.onclick = () => analisarSolicitacao(solicitacao.id, true);
+
+const reprovar = document.createElement("button");
+reprovar.textContent = "Reprovar solicitação";
+reprovar.onclick = () => analisarSolicitacao(solicitacao.id, false);
+
+item.appendChild(aprovar);
+item.appendChild(reprovar);
+lista.appendChild(item);
+});
+}async function analisarSolicitacao(id, aprovar) {
+
+const acao = aprovar ? "aprovar" : "reprovar";
+
+if (!confirm("Deseja " + acao + " esta solicitação?")) {
+return;
+}
+
+const observacao = prompt("Observação administrativa (opcional):");
+
+if (observacao === null) return;
+
+const { error } = await clienteSupabase.rpc(
+"analisar_solicitacao_alteracao",
+{
+p_solicitacao_id: id,
+p_aprovar: aprovar,
+p_observacao: observacao.trim() || null
+}
+);
+
+if (error) {
+alert("Erro: " + error.message);
+return;
+}
+
+alert("Solicitação analisada com sucesso!");
+
+await carregarSolicitacoes();
+await carregar();
 }
 
 iniciar();
