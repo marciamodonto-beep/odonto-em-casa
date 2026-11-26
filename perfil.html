@@ -202,61 +202,7 @@ elemento("formulario")
 .forEach(campo => campo.disabled = true);
 }
 function habilitarEdicao() {
-elemento("area_solicitacao").hidden = false;
 
-elemento("novas_especialidades").value =
-(resultado.data.especialidades || []).join(", ");
-
-elemento("novas_habilitacoes").value =
-(resultado.data.habilitacoes || []).join(", ");
-const { data: solicitacao, error: erroSolicitacao } =
-await clienteSupabase
-.from("solicitacoes_alteracao")
-.select("*")
-.eq("dentista_id", resultado.data.id)
-.order("criado_em", { ascending: false })
-.limit(1)
-.maybeSingle();
-
-if (erroSolicitacao) {
-
-elemento("situacao_solicitacao").textContent =
-"Não foi possível consultar as solicitações.";
-
-} else if (solicitacao) {
-
-const situacoes = {
-pendente: "Aguardando análise",
-aprovado: "Aprovada",
-reprovado: "Não aprovada"
-};
-
-elemento("situacao_solicitacao").textContent =
-"Última solicitação: " +
-situacoes[solicitacao.status] +
-(solicitacao.observacao_admin
-? " | Observação: " + solicitacao.observacao_admin
-: "");
-
-if (solicitacao.status === "pendente") {
-
-elemento("enviar_solicitacao").disabled = true;
-elemento("novas_especialidades").disabled = true;
-elemento("novas_habilitacoes").disabled = true;
-elemento("novos_servicos").disabled = true;
-
-elemento("novas_especialidades").value =
-solicitacao.especialidades.join(", ");
-
-elemento("novas_habilitacoes").value =
-solicitacao.habilitacoes.join(", ");
-
-elemento("novos_servicos").value =
-solicitacao.servicos_oferecidos.join(", ");
-}
-}
-elemento("novos_servicos").value =
-(resultado.data.servicos_oferecidos || []).join(", ");
 
 bloquear();
 
@@ -332,6 +278,138 @@ elemento("status").textContent =
 "Situação: " + resultado.data.status_aprovacao;
 
 habilitarEdicao();
+elemento("area_solicitacao").hidden = false;
+
+elemento("novas_especialidades").value =
+(resultado.data.especialidades || []).join(", ");
+
+elemento("novas_habilitacoes").value =
+(resultado.data.habilitacoes || []).join(", ");
+
+elemento("novos_servicos").value =
+(resultado.data.servicos_oferecidos || []).join(", ");
+
+const { data: solicitacao, error: erroSolicitacao } =
+await clienteSupabase
+.from("solicitacoes_alteracao")
+.select("*")
+.eq("dentista_id", resultado.data.id)
+.order("criado_em", { ascending: false })
+.limit(1)
+.maybeSingle();
+
+if (erroSolicitacao) {
+
+elemento("situacao_solicitacao").textContent =
+"Não foi possível consultar as solicitações.";
+
+} else if (solicitacao) {
+
+const situacoes = {
+pendente: "Aguardando análise",
+aprovado: "Aprovada",
+reprovado: "Não aprovada"
+};
+
+elemento("situacao_solicitacao").textContent =
+"Última solicitação: " +
+situacoes[solicitacao.status] +
+(solicitacao.observacao_admin
+? " | Observação: " + solicitacao.observacao_admin
+: "");
+
+if (solicitacao.status === "pendente") {
+
+elemento("enviar_solicitacao").disabled = true;
+elemento("novas_especialidades").disabled = true;
+elemento("novas_habilitacoes").disabled = true;
+elemento("novos_servicos").disabled = true;
+
+elemento("novas_especialidades").value =
+solicitacao.especialidades.join(", ");
+
+elemento("novas_habilitacoes").value =
+solicitacao.habilitacoes.join(", ");
+
+elemento("novos_servicos").value =
+solicitacao.servicos_oferecidos.join(", ");
+}
+}
+
+
+At.te.
+
+Márcia Maria de Sousa Leal
+Cirurgiã-dentista CRO MG 50853
+Mestra em Saúde da Família 
+ Residência Multiprofissional em Saúde do Idoso
+Especialista em Odontologia Hospitalar  e Informática em Saúde  Habilitada em Laserterapia 
+Griffith University, Australia - Study Abroad Alumna
+Curriculo lattes:  http://lattes.cnpq.br/1536078514770501 
+
+“O SENHOR é meu pastor e nada me faltará”
+
+
+
+Em qui., 26 de nov. de 2026 às 6:01 PM, Marcia Maria de Sousa Leal <marcia.m.odonto@gmail.com> escreveu:
+
+elemento("area_solicitacao").hidden = false;
+
+elemento("novas_especialidades").value =
+(resultado.data.especialidades || []).join(", ");
+
+elemento("novas_habilitacoes").value =
+(resultado.data.habilitacoes || []).join(", ");
+
+elemento("novos_servicos").value =
+(resultado.data.servicos_oferecidos || []).join(", ");
+
+const { data: solicitacao, error: erroSolicitacao } =
+await clienteSupabase
+.from("solicitacoes_alteracao")
+.select("*")
+.eq("dentista_id", resultado.data.id)
+.order("criado_em", { ascending: false })
+.limit(1)
+.maybeSingle();
+
+if (erroSolicitacao) {
+
+elemento("situacao_solicitacao").textContent =
+"Não foi possível consultar as solicitações.";
+
+} else if (solicitacao) {
+
+const situacoes = {
+pendente: "Aguardando análise",
+aprovado: "Aprovada",
+reprovado: "Não aprovada"
+};
+
+elemento("situacao_solicitacao").textContent =
+"Última solicitação: " +
+situacoes[solicitacao.status] +
+(solicitacao.observacao_admin
+? " | Observação: " + solicitacao.observacao_admin
+: "");
+
+if (solicitacao.status === "pendente") {
+
+elemento("enviar_solicitacao").disabled = true;
+elemento("novas_especialidades").disabled = true;
+elemento("novas_habilitacoes").disabled = true;
+elemento("novos_servicos").disabled = true;
+
+elemento("novas_especialidades").value =
+solicitacao.especialidades.join(", ");
+
+elemento("novas_habilitacoes").value =
+solicitacao.habilitacoes.join(", ");
+
+elemento("novos_servicos").value =
+solicitacao.servicos_oferecidos.join(", ");
+}
+}
 
 } else {
 elemento("status").textContent =
