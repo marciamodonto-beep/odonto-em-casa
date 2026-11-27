@@ -5,61 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perfil Profissional - Odonto em Casa</title>
 
-<style>
-body {
-font-family: Arial, sans-serif;
-background: #eef2f8;
-margin: 0;
-color: #243454;
-}
-header {
-background: #243b80;
-color: white;
-padding: 25px;
-text-align: center;
-}
-main {
-max-width: 650px;
-margin: 25px auto;
-background: white;
-padding: 25px;
-border-radius: 10px;
-}
-label {
-display: block;
-margin-top: 15px;
-font-weight: bold;
-}
-input:not([type="checkbox"]), textarea {
-width: 100%;
-padding: 12px;
-margin-top: 6px;
-border: 1px solid #ccc;
-border-radius: 6px;
-box-sizing: border-box;
-}
-button {
-width: 100%;
-padding: 15px;
-margin-top: 20px;
-background: #304db5;
-color: white;
-border: none;
-border-radius: 6px;
-font-size: 16px;
-cursor: pointer;
-}
-button:disabled {
-opacity: 0.5;
-}
-</style>
+
+<link rel="stylesheet" href="estilo.css">
 </head>
 
-<body>
+<body class="perfil">
 
 <header>
 <h1>ODONTO EM CASA</h1>
 <p>Meu perfil profissional</p>
+<nav aria-label="Navegação principal"><a href="buscar.html">Buscar dentistas</a><a href="painel.html">Meu painel</a></nav>
 </header>
 
 <main id="area" hidden>
@@ -69,47 +24,47 @@ opacity: 0.5;
 
 <form id="formulario">
 
-<label>Nome completo</label>
+<label for="nome">Nome completo</label>
 <input id="nome" required>
 
-<label>Número do CRO</label>
+<label for="cro">Número do CRO</label>
 <input id="cro" required>
 
-<label>UF do CRO</label>
+<label for="uf_cro">UF do CRO</label>
 <input id="uf_cro" maxlength="2" required>
 
-<label>Especialidades registradas</label>
+<label for="especialidades">Especialidades registradas</label>
 <textarea id="especialidades"
 placeholder="Separe por vírgulas"></textarea>
 
-<label>Habilitações</label>
+<label for="habilitacoes">Habilitações</label>
 <textarea id="habilitacoes"
 placeholder="Separe por vírgulas"></textarea>
 
-<label>Descrição profissional</label>
+<label for="descricao">Descrição profissional</label>
 <textarea id="descricao" rows="4"></textarea>
 
-<label>Estado de atendimento</label>
+<label for="estado">Estado de atendimento</label>
 <input id="estado" required>
 
-<label>Cidade principal</label>
+<label for="cidade">Cidade principal</label>
 <input id="cidade" required>
 
-<label>Cidades atendidas</label>
+<label for="cidades_atendidas">Cidades atendidas</label>
 <textarea id="cidades_atendidas"
 placeholder="Separe por vírgulas"></textarea>
 
-<label>Serviços oferecidos</label>
+<label for="servicos_oferecidos">Serviços oferecidos</label>
 <textarea id="servicos_oferecidos"
 placeholder="Separe por vírgulas"></textarea>
 
-<label>Disponibilidade</label>
+<label for="disponibilidade">Disponibilidade</label>
 <textarea id="disponibilidade"></textarea>
 
-<label>WhatsApp profissional</label>
+<label for="whatsapp">WhatsApp profissional</label>
 <input id="whatsapp" type="tel">
 
-<label>Instagram profissional</label>
+<label for="instagram">Instagram profissional</label>
 <input id="instagram">
 
 <label>
@@ -148,15 +103,15 @@ As alterações serão submetidas à análise administrativa.
 Mantenha as qualificações atuais que deseja preservar.
 </p>
 
-<label>Especialidades registradas</label>
+<label for="novas_especialidades">Especialidades registradas</label>
 <textarea id="novas_especialidades"
 placeholder="Separe por vírgulas"></textarea>
 
-<label>Habilitações</label>
+<label for="novas_habilitacoes">Habilitações</label>
 <textarea id="novas_habilitacoes"
 placeholder="Separe por vírgulas"></textarea>
 
-<label>Serviços oferecidos</label>
+<label for="novos_servicos">Serviços oferecidos</label>
 <textarea id="novos_servicos"
 placeholder="Separe por vírgulas"></textarea>
 
@@ -497,5 +452,6 @@ botao.disabled = false;
 );
 </script>
 
+<footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
 </body>
 </html>

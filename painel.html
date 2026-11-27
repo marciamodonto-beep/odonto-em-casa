@@ -5,48 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel do Dentista</title>
 
-<style>
-body {
-font-family: Arial, sans-serif;
-background: #eef2f8;
-margin: 0;
-color: #243454;
-}
 
-header {
-background: #243b80;
-color: white;
-padding: 25px;
-text-align: center;
-}
-
-main {
-max-width: 500px;
-margin: 30px auto;
-background: white;
-padding: 25px;
-border-radius: 10px;
-}
-
-button {
-width: 100%;
-padding: 15px;
-margin: 8px 0;
-background: #304db5;
-color: white;
-border: none;
-border-radius: 6px;
-font-size: 16px;
-cursor: pointer;
-}
-</style>
+<link rel="stylesheet" href="estilo.css">
 </head>
 
-<body>
+<body class="painel">
 
 <header>
 <h1>ODONTO EM CASA</h1>
 <p>Área do profissional</p>
+<nav aria-label="Navegação principal"><a href="buscar.html">Buscar dentistas</a></nav>
 </header>
 
 <main id="painel" hidden>
@@ -57,9 +25,9 @@ cursor: pointer;
 
 <button onclick="location.href='perfil.html'">Meu perfil profissional</button>
 
-<button disabled>Minha disponibilidade</button>
+<button disabled>Minha disponibilidade — em breve</button>
 
-<button disabled>Meus atendimentos</button>
+<button disabled>Meus atendimentos — em breve</button>
 <button id="botaoAdmin" hidden style="display:none;" onclick="location.href='admin.html'">Painel administrativo</button>
 <button onclick="sair()">Sair da conta</button>
 
@@ -118,5 +86,6 @@ verificarLogin();
 
 </script>
 
+<footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
 </body>
 </html>

@@ -6,11 +6,13 @@
 
 <title>Buscar dentistas - Odonto em Casa</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="estilo.css">
 </head>
 
-<body>
+<body class="buscar">
 
-<h1>Odonto em Casa</h1>
+<header><h1>ODONTO EM CASA</h1><p>Encontre atendimento odontológico domiciliar</p><nav aria-label="Navegação principal"><a href="index.html">Área do dentista</a></nav></header>
+<main>
 
 <h2>Encontre um dentista para atendimento domiciliar</h2>
 
@@ -22,7 +24,7 @@
 <option value="">Selecione o estado</option>
 </select>
 
-<br><br>
+
 
 <label for="cidade">Município:</label>
 
@@ -30,20 +32,21 @@
 <option value="">Selecione o município</option>
 </select>
 
-<br><br>
+
 
 <label for="especialidade">Especialidade, habilitação ou serviço:</label>
 
 <input type="text" id="especialidade"
 placeholder="Digite o que procura">
 
-<br><br>
+
 
 <button id="buscar">Buscar profissionais</button>
 
-<p id="status"></p>
+<p id="status" role="status" aria-live="polite"></p>
 
 <div id="resultados"></div>
+</main>
 <script>
 const clienteSupabase = window.supabase.createClient(
 "https://sbubucjwxgtckdwedose.supabase.co",
@@ -203,6 +206,7 @@ return;
 encontrados.forEach(dentista => {
 
 const card = document.createElement("div");
+card.className = "card";
 
 const titulo = document.createElement("h3");
 titulo.textContent = dentista.nome;
@@ -235,6 +239,7 @@ if (/^55\d{10,11}$/.test(numero)) {
 
 const contato = document.createElement("a");
 
+contato.className = "contact";
 contato.textContent = "Entrar em contato pelo WhatsApp";
 
 contato.href = "https://wa.me/" + numero;
@@ -250,5 +255,6 @@ resultados.appendChild(card);
 });
 });
 </script>
+<footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
 </body>
 </html>
