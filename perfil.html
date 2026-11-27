@@ -131,6 +131,14 @@ Enviar cadastro para análise
 </button>
 
 </form>
+
+  <div id="area_notificacao" hidden style="display:none;">
+<p>Avise a administração sobre o envio para análise.</p>
+
+<button type="button" onclick="notificarWhatsApp()">
+Notificar administração pelo WhatsApp
+</button>
+</div>
 <section id="area_solicitacao" hidden>
 
 <h2>Alteração de qualificações profissionais</h2>
@@ -259,6 +267,11 @@ if (resultado.data) {
 perfilExistente = true;
 fotoAtual = resultado.data.foto_url ?? null;
 
+
+  if (resultado.data.status_aprovacao === "pendente") {
+elemento("area_notificacao").hidden = false;
+elemento("area_notificacao").style.display = "block";
+}
 campos.forEach(id => {
 
 const campo = elemento(id);
@@ -319,7 +332,8 @@ situacoes[solicitacao.status] +
 : "");
 
 if (solicitacao.status === "pendente") {
-
+elemento("area_notificacao").hidden = false;
+elemento("area_notificacao").style.display = "block";
 elemento("enviar_solicitacao").disabled = true;
 elemento("novas_especialidades").disabled = true;
 elemento("novas_habilitacoes").disabled = true;
@@ -407,7 +421,31 @@ alert("Cadastro enviado com sucesso!");
 location.reload();
 
 });
+async function notificarWhatsApp() {
 
+const { data: numero, error } =
+await clienteSupabase.rpc("obter_whatsapp_admin");
+
+if (error || !numero) {
+alert("Contato administrativo indisponível.");
+return;
+}
+
+const nome = elemento("nome").value;
+const cro = elemento("cro").value;
+const uf = elemento("uf_cro").value;
+
+const mensagem =
+"Olá! Enviei uma solicitação para análise no Odonto em Casa.\n\n" +
+"Nome: " + nome + "\n" +
+"CRO: " + cro + " - " + uf + "\n\n" +
+"Aguardo a análise administrativa. Obrigado(a)!";
+
+const link = "https://wa.me/" + numero +
+"?text=" + encodeURIComponent(mensagem);
+
+window.open(link, "_blank", "noopener,noreferrer");
+}
 iniciar();
 elemento("enviar_solicitacao").addEventListener(
 "click", async function () {
