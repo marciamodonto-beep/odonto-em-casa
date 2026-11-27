@@ -60,7 +60,7 @@ cursor: pointer;
 <button disabled>Minha disponibilidade</button>
 
 <button disabled>Meus atendimentos</button>
-
+<button id="botaoAdmin" hidden style="display:none;" onclick="location.href='admin.html'">Painel administrativo</button>
 <button onclick="sair()">Sair da conta</button>
 
 </main>
@@ -92,6 +92,15 @@ document.getElementById("usuario").textContent =
 data.user.email;
 
 document.getElementById("painel").hidden = false;
+
+  const permissaoAdmin = await clienteSupabase.rpc("eh_administrador");
+
+if (!permissaoAdmin.error && permissaoAdmin.data === true) {
+const botaoAdmin = document.getElementById("botaoAdmin");
+botaoAdmin.hidden = false;
+botaoAdmin.style.display = "block";
+}
+
 }
 
 async function sair() {
