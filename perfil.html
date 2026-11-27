@@ -20,7 +20,7 @@
 <main id="area" hidden>
 
 <h2>Cadastro profissional</h2>
-<p id="status"></p>
+<p id="status"></p><p id="observacao_cadastro" role="status" hidden></p>
 
 <form id="formulario">
 
@@ -226,7 +226,7 @@ elemento("link_horarios").hidden = false;
 fotoAtual = resultado.data.foto_url ?? null;
 
 
-  if (resultado.data.status_aprovacao === "pendente") {
+  if (["pendente","correcao"].includes(resultado.data.status_aprovacao)) {
 elemento("area_notificacao").hidden = false;
 elemento("area_notificacao").style.display = "block";
 }
@@ -246,7 +246,10 @@ campo.value = Array.isArray(valor)
 });
 
 elemento("status").textContent =
-"Situação: " + resultado.data.status_aprovacao;
+"Situação: " + ({pendente:"Aguardando análise",aprovado:"Aprovado",correcao:"Aguardando correção",reprovado:"Reprovado",suspenso:"Suspenso"}[resultado.data.status_aprovacao] || resultado.data.status_aprovacao);
+const aviso = elemento("observacao_cadastro");
+aviso.hidden = !resultado.data.observacao_admin && resultado.data.status_aprovacao !== "correcao";
+aviso.textContent = (resultado.data.observacao_admin ? "Observação administrativa: " + resultado.data.observacao_admin : "") + (resultado.data.status_aprovacao === "correcao" ? " | Corrija os campos permitidos, salve e avise a administração pelo WhatsApp. Para campos bloqueados, solicite orientação." : "");
 
 habilitarEdicao();
 elemento("area_solicitacao").hidden = false;

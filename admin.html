@@ -22,7 +22,9 @@
 
 <section id="area" hidden>
 
-<h2>Cadastros pendentes</h2>
+<h2>Visão geral dos cadastros</h2><div id="indicadores" class="indicadores"></div>
+<div class="filtros-admin"><label>Nome<input id="f_nome"></label><label>CRO<input id="f_cro"></label><label>Estado<input id="f_estado"></label><label>Município<input id="f_cidade"></label><label>Situação<select id="f_status"><option value="">Todas</option><option value="pendente">Pendentes</option><option value="aprovado">Aprovados</option><option value="correcao">Aguardando correção</option><option value="reprovado">Reprovados</option><option value="suspenso">Suspensos</option></select></label></div>
+<button id="exportar" onclick="exportar()" disabled>Exportar lista filtrada (CSV)</button><p id="total"></p>
 
 <button onclick="carregar()">
 Atualizar lista
@@ -45,7 +47,7 @@ Sair da conta
 Atualizar solicitações
 </button>
 
-<div id="lista_solicitacoes"></div>
+<label>Situação das solicitações<select id="f_solicitacao" onchange="carregarSolicitacoes()"><option value="pendente">Pendentes</option><option value="aprovado">Aprovadas</option><option value="reprovado">Reprovadas</option><option value="">Todas</option></select></label><div id="lista_solicitacoes"></div>
 </section>
 </main>
 
@@ -83,8 +85,9 @@ return;
 mensagem.textContent = "Área administrativa";
 area.hidden = false;
 
+for (const id of ["f_nome","f_cro","f_estado","f_cidade","f_status"]) document.getElementById(id).addEventListener("input", renderizar);
 await carregar();
-  await carregarSolicitacoes();
+await carregarSolicitacoes();
 }
 
 function campo(card, titulo, valor) {
@@ -105,104 +108,62 @@ Array.isArray(valor)
 card.appendChild(p);
 }
 
+const rotulos = {pendente:"Pendente", aprovado:"Aprovado", correcao:"Aguardando correção", reprovado:"Reprovado", suspenso:"Suspenso"};
+let cadastros = [], filtrados = [], pronto = false, ocupado = false;
+const el = id => document.getElementById(id);
+const normal = v => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const dataBR = v => v ? new Date(v).toLocaleString("pt-BR") : "Não registrada";
+async function paginar(tabela, campos, filtro) {
+ const todos = []; const tamanho = 200;
+ for(let inicio=0;;inicio+=tamanho) {
+  let q=clienteSupabase.from(tabela).select(campos).order("id").range(inicio,inicio+tamanho-1);
+  if(filtro) q=filtro(q);
+  const {data,error}=await q; if(error) throw error;
+  todos.push(...data); if(data.length<tamanho) return todos;
+ }
+}
 async function carregar() {
-
-lista.textContent = "Carregando...";
-
-const { data, error } = await clienteSupabase
-.from("dentistas")
-.select("*")
-.eq("status_aprovacao", "pendente")
-.order("criado_em", { ascending: false });
-
-if (error) {
-lista.textContent = error.message;
-return;
+ if(ocupado) return; ocupado=true; pronto=false; el("exportar").disabled=true; lista.textContent="Carregando..."; el("indicadores").textContent=""; el("total").textContent="";
+ try { cadastros=await paginar("dentistas","*"); pronto=true; renderizar(); }
+ catch(e){cadastros=[]; filtrados=[]; lista.textContent="Erro: "+e.message;}
+ finally{ocupado=false;}
 }
-
-lista.textContent = "";
-
-if (data.length === 0) {
-lista.textContent = "Nenhum cadastro pendente.";
-return;
+function renderizar(){
+ if(!pronto) return;
+ const indicadores=el("indicadores"); indicadores.replaceChildren();
+ for(const [status,label] of [["","Total"],...Object.entries(rotulos)]){
+  const box=document.createElement("div"); box.className="card"; campo(box,label,String(status?cadastros.filter(d=>d.status_aprovacao===status).length:cadastros.length)); indicadores.append(box);
+ }
+ filtrados=cadastros.filter(d=>[["nome","f_nome"],["cro","f_cro"],["estado","f_estado"],["cidade","f_cidade"]].every(([k,id])=>normal(d[k]).includes(normal(el(id).value))) && (!el("f_status").value||d.status_aprovacao===el("f_status").value));
+ el("total").textContent="Cadastros encontrados: "+filtrados.length; el("exportar").disabled=!filtrados.length; lista.replaceChildren();
+ if(!filtrados.length) lista.textContent="Nenhum cadastro encontrado.";
+ for(const d of filtrados){
+  const card=document.createElement("div"); card.className="card";
+  for(const [label,key] of [["Nome","nome"],["CRO","cro"],["UF do CRO","uf_cro"],["Estado","estado"],["Município","cidade"],["Especialidades","especialidades"],["Habilitações","habilitacoes"],["Serviços","servicos_oferecidos"],["Descrição","descricao"],["Municípios atendidos","cidades_atendidas"],["WhatsApp","whatsapp"],["Instagram","instagram"],["Disponibilidade","disponibilidade"],["Observação ao dentista","observacao_admin"]]) campo(card,label,d[key]);
+  campo(card,"Situação",rotulos[d.status_aprovacao]||d.status_aprovacao); campo(card,"Última análise",dataBR(d.data_ultima_analise)); campo(card,"Verificação CRO",dataBR(d.data_verificacao_cro)); campo(card,"Autorização de publicação",d.autorizacao_publicacao?"Sim":"Não"); campo(card,"Declaração de veracidade",d.declaracao_veracidade?"Sim":"Não");
+  const foto=d.foto_url; if(foto) campo(card,"URL da foto",foto);
+  for(const [status,label] of [["aprovado",d.status_aprovacao==="suspenso"?"Reativar":"Aprovar"],["correcao","Solicitar correção"],["reprovado","Reprovar"],["suspenso","Suspender"],["pendente","Retornar à análise"]]){
+   if(status===d.status_aprovacao) continue; const b=document.createElement("button"); b.textContent=label; b.onclick=()=>alterar(d,status,b); card.append(b);
+  }
+  const b=document.createElement("button"), h=document.createElement("div"); b.textContent="Ver histórico de decisões"; b.onclick=()=>historico(d.id,h); card.append(b,h); lista.append(card);
+ }
 }
-
-data.forEach(dentista => {
-
-const card = document.createElement("div");
-card.className = "card";
-
-campo(card, "Nome", dentista.nome);
-campo(card, "CRO", dentista.cro);
-campo(card, "UF do CRO", dentista.uf_cro);
-campo(card, "Estado", dentista.estado);
-campo(card, "Cidade", dentista.cidade);
-campo(card, "Especialidades", dentista.especialidades);
-campo(card, "Habilitações", dentista.habilitacoes);
-campo(card, "Descrição", dentista.descricao);
-campo(card, "Cidades atendidas", dentista.cidades_atendidas);
-campo(card, "Serviços", dentista.servicos_oferecidos);
-campo(card, "Disponibilidade", dentista.disponibilidade);
-campo(card, "WhatsApp", dentista.whatsapp);
-campo(card, "Instagram", dentista.instagram);
-campo(card, "Situação", dentista.status_aprovacao);
-
-const aprovar = document.createElement("button");
-aprovar.textContent = "Aprovar cadastro";
-aprovar.className = "aprovar";
-
-aprovar.onclick = () =>
-alterar(dentista.usuario_id, true);
-
-const rejeitar = document.createElement("button");
-rejeitar.textContent = "Rejeitar cadastro";
-rejeitar.className = "rejeitar";
-
-rejeitar.onclick = () =>
-alterar(dentista.usuario_id, false);
-
-card.appendChild(aprovar);
-card.appendChild(rejeitar);
-
-lista.appendChild(card);
-
-});
+async function historico(id,box){box.textContent="Carregando...";try{const rows=await paginar("historico_administrativo","*",q=>q.eq("dentista_id",id));box.replaceChildren();if(!rows.length)box.textContent="Nenhuma decisão registrada pelo novo painel.";rows.sort((a,b)=>b.criado_em.localeCompare(a.criado_em));for(const r of rows)campo(box,dataBR(r.criado_em),`${rotulos[r.status_anterior]||r.status_anterior} → ${rotulos[r.status_novo]||r.status_novo} | ${r.observacao||"Sem observação"}`);}catch(e){box.textContent="Erro: "+e.message;}}
+async function alterar(d,status,b){
+ if(b.disabled)return;
+ if(status==="aprovado"&&!confirm("Você verificou o CRO e as informações profissionais? A aprovação poderá publicar o perfil."))return;
+ if(status!=="aprovado"&&!confirm("Alterar situação para "+rotulos[status]+"?"))return;
+ const obs=prompt("Observação visível ao dentista (não inclua dados sigilosos):"); if(obs===null)return;
+ if(["correcao","reprovado","suspenso"].includes(status)&&!obs.trim()){alert("Informe o motivo.");return;}
+ b.disabled=true;
+ try{const {error}=await clienteSupabase.rpc("gerenciar_cadastro",{p_dentista_id:d.id,p_status:status,p_observacao:obs.trim()||null,p_cro_verificado:status==="aprovado"});if(error)throw error;alert("Cadastro atualizado.");await carregar();}catch(e){alert("Erro: "+e.message);}finally{b.disabled=false;}
 }
-
-async function alterar(usuarioId, aprovado) {
-
-const pergunta = aprovado
-? "Você conferiu o CRO e as informações profissionais?"
-: "Confirma a rejeição deste cadastro?";
-
-if (!confirm(pergunta)) return;
-
-const { data, error } = await clienteSupabase
-.from("dentistas")
-.update({
-aprovado: aprovado,
-status_aprovacao: aprovado ? "aprovado" : "reprovado",
-data_verificacao_cro: aprovado
-? new Date().toISOString()
-: null
-})
-.eq("usuario_id", usuarioId)
-.eq("status_aprovacao", "pendente")
-.select("usuario_id");
-
-if (error) {
-alert("Erro: " + error.message);
-return;
-}
-
-if (!data || data.length === 0) {
-alert("Nenhum cadastro foi alterado.");
-return;
-}
-
-alert("Cadastro atualizado com sucesso!");
-
-await carregar();
+function exportar(){
+ if(!pronto||!filtrados.length||!confirm("Exportar dados cadastrais para uso administrativo privado?"))return;
+ const chaves=["nome","cro","uf_cro","estado","cidade","status_aprovacao","criado_em","data_ultima_analise"];
+ const csv=v=>{let s=String(v??"");if(/^[\s\uFEFF]*[=+@-]|^[\t\r\n]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
+ const texto=[chaves.join(";"),...filtrados.map(d=>chaves.map(k=>csv(d[k])).join(";"))].join("\r\n");
+ const url=URL.createObjectURL(new Blob(["\uFEFF",texto],{type:"text/csv;charset=utf-8"}));const link=document.createElement("a");link.href=url;link.download="cadastros-odonto-em-casa.csv";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 async function sair() {
@@ -215,24 +176,14 @@ const contador = document.getElementById("contador_solicitacoes");
 
 lista.textContent = "Carregando solicitações...";
 
-const { data, error } = await clienteSupabase
-.from("solicitacoes_alteracao")
-.select("*, dentistas(nome, cro, uf_cro)")
-.eq("status", "pendente")
-.order("criado_em", { ascending: true });
-
-if (error) {
-contador.textContent = "";
-lista.textContent = "Erro: " + error.message;
-return;
-}
-
-contador.textContent = "Solicitações pendentes: " + data.length;
+let data;
+try { const status=el("f_solicitacao").value; data=await paginar("solicitacoes_alteracao","*, dentistas(nome, cro, uf_cro)",status?q=>q.eq("status",status):null); data.sort((a,b)=>b.criado_em.localeCompare(a.criado_em)); } catch(error){contador.textContent="";lista.textContent="Erro: "+error.message;return;}
+contador.textContent = "Solicitações encontradas: " + data.length;
 
 lista.textContent = "";
 
 if (data.length === 0) {
-lista.textContent = "Nenhuma solicitação pendente.";
+lista.textContent = "Nenhuma solicitação encontrada.";
 return;
 }
 
@@ -254,6 +205,8 @@ solicitacao.habilitacoes.join(", "));
 
 campo(item, "Serviços solicitados",
 solicitacao.servicos_oferecidos.join(", "));
+campo(item,"Situação",solicitacao.status); campo(item,"Criada em",dataBR(solicitacao.criado_em)); campo(item,"Analisada em",dataBR(solicitacao.analisado_em)); campo(item,"Observação",solicitacao.observacao_admin);
+if(solicitacao.status === "pendente"){
 const aprovar = document.createElement("button");
 aprovar.textContent = "Aprovar solicitação";
 aprovar.onclick = () => analisarSolicitacao(solicitacao.id, true);
@@ -264,6 +217,7 @@ reprovar.onclick = () => analisarSolicitacao(solicitacao.id, false);
 
 item.appendChild(aprovar);
 item.appendChild(reprovar);
+}
 lista.appendChild(item);
 });
 }async function analisarSolicitacao(id, aprovar) {
