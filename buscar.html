@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Buscar dentistas - Odonto em Casa</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+<h1>Odonto em Casa</h1>
+
+<h2>Encontre um dentista para atendimento domiciliar</h2>
+
+<p>Selecione a localização onde deseja receber atendimento odontológico.</p>
+
+<label for="estado">Estado:</label>
+
+<select id="estado">
+<option value="">Selecione o estado</option>
+</select>
+
+<br><br>
+
+<label for="cidade">Município:</label>
+
+<select id="cidade" disabled>
+<option value="">Selecione o município</option>
+</select>
+
+<br><br>
+
+<label for="especialidade">Especialidade, habilitação ou serviço:</label>
+
+<input type="text" id="especialidade"
+placeholder="Digite o que procura">
+
+<br><br>
+
+<button id="buscar">Buscar profissionais</button>
+
+<p id="status"></p>
+
+<div id="resultados"></div>
+<script>
+const clienteSupabase = window.supabase.createClient(
+"https://sbubucjwxgtckdwedose.supabase.co",
+"sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu"
+);
+const estado = document.getElementById("estado");
+const cidade = document.getElementById("cidade");
+const status = document.getElementById("status");
+
+async function carregarEstados() {
+
+  document.getElementById("buscar").addEventListener(
+"click", async function () {
+
+const resultados = document.getElementById("resultados");
+
+resultados.textContent = "";
+
+if (!estado.value || !cidade.value) {
+status.textContent = "Selecione o estado e o município.";
+return;
+}
+
+status.textContent = "Buscando profissionais...";
+
+const { data, error } = await clienteSupabase
+.from("dentistas_publicos")
+.select("*")
+.eq("estado", estado.value)
+.order("nome");
+
+if (error) {
+status.textContent = "Erro ao buscar profissionais.";
+return;
+}
+
+const encontrados = data.filter(dentista =>
+dentista.cidade === cidade.value ||
+(dentista.cidades_atendidas || []).includes(cidade.value)
+);
+
+status.textContent =
+"Profissionais encontrados: " + encontrados.length;
+
+});
+
+try {
+
+const resposta = await fetch(
+"https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
+);
+
+if (!resposta.ok) throw new Error();
+
+const estados = await resposta.json();
+
+estados.forEach(uf => {
+
+const opcao = document.createElement("option");
+
+opcao.value = uf.sigla;
+opcao.textContent = uf.nome;
+
+estado.appendChild(opcao);
+
+});
+
+} catch (erro) {
+
+status.textContent =
+"Não foi possível carregar os estados.";
+
+}
+
+}
+
+estado.addEventListener("change", async function () {
+
+cidade.innerHTML =
+'<option value="">Selecione o município</option>';
+
+cidade.disabled = true;
+status.textContent = "";
+
+if (!estado.value) return;
+
+const ufSelecionada = estado.value;
+
+try {
+
+const resposta = await fetch(
+"https://servicodados.ibge.gov.br/api/v1/localidades/estados/" +
+ufSelecionada + "/municipios?orderBy=nome"
+);
+
+if (!resposta.ok) throw new Error();
+
+const municipios = await resposta.json();
+
+if (estado.value !== ufSelecionada) return;
+
+municipios.forEach(municipio => {
+
+const opcao = document.createElement("option");
+
+opcao.value = municipio.nome;
+opcao.textContent = municipio.nome;
+
+cidade.appendChild(opcao);
+
+});
+
+cidade.disabled = false;
+
+} catch (erro) {
+
+if (estado.value === ufSelecionada) {
+status.textContent =
+"Não foi possível carregar os municípios.";
+}
+
+}
+
+});
+
+carregarEstados();
+document.getElementById("buscar").addEventListener(
+"click", async function () {
+
+const resultados = document.getElementById("resultados");
+
+resultados.textContent = "";
+
+if (!estado.value || !cidade.value) {
+status.textContent = "Selecione o estado e o município.";
+return;
+}
+
+status.textContent = "Buscando profissionais...";
+
+const { data, error } = await clienteSupabase
+.from("dentistas_publicos")
+.select("*")
+.eq("estado", estado.value)
+.order("nome");
+
+if (error) {
+status.textContent = "Erro ao buscar profissionais.";
+return;
+}
+
+const encontrados = data.filter(dentista =>
+dentista.cidade === cidade.value ||
+(dentista.cidades_atendidas || []).includes(cidade.value)
+);
+
+status.textContent =
+"Profissionais encontrados: " + encontrados.length;
+if (encontrados.length === 0) {
+resultados.textContent =
+"Nenhum profissional disponível neste município.";
+return;
+}
+
+encontrados.forEach(dentista => {
+
+const card = document.createElement("div");
+
+const titulo = document.createElement("h3");
+titulo.textContent = dentista.nome;
+card.appendChild(titulo);
+
+const dados = [
+["CRO", dentista.cro + " - " + dentista.uf_cro],
+["Especialidades", (dentista.especialidades || []).join(", ")],
+["Habilitações", (dentista.habilitacoes || []).join(", ")],
+["Serviços", (dentista.servicos_oferecidos || []).join(", ")],
+["Município", dentista.cidade],
+["Descrição", dentista.descricao],
+["Disponibilidade", dentista.disponibilidade]
+];
+
+dados.forEach(([rotulo, valor]) => {
+if (!valor) return;
+
+const p = document.createElement("p");
+p.textContent = rotulo + ": " + valor;
+card.appendChild(p);
+});
+let numero = (dentista.whatsapp || "").replace(/\D/g, "");
+
+if (numero.length === 10 || numero.length === 11) {
+numero = "55" + numero;
+}
+
+if (/^55\d{10,11}$/.test(numero)) {
+
+const contato = document.createElement("a");
+
+contato.textContent = "Entrar em contato pelo WhatsApp";
+
+contato.href = "https://wa.me/" + numero;
+
+contato.target = "_blank";
+contato.rel = "noopener noreferrer";
+
+card.appendChild(contato);
+
+}
+resultados.appendChild(card);
+
+});
+});
+</script>
+</body>
+</html>
