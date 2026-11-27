@@ -13,269 +13,61 @@
 
 <header><h1>ODONTO EM CASA</h1><p>Encontre atendimento odontológico domiciliar</p><nav aria-label="Navegação principal"><a href="index.html">Área do dentista</a></nav></header>
 <main>
-
 <h2>Encontre um dentista para atendimento domiciliar</h2>
-
-<p>Selecione a localização onde deseja receber atendimento odontológico.</p>
-
-<label for="estado">Estado:</label>
-
-<select id="estado">
-<option value="">Selecione o estado</option>
-</select>
-
-
-
-<label for="cidade">Município:</label>
-
-<select id="cidade" disabled>
-<option value="">Selecione o município</option>
-</select>
-
-
-
-<label for="especialidade">Especialidade, habilitação ou serviço:</label>
-
-<input type="text" id="especialidade"
-placeholder="Digite o que procura">
-
-
-
-<button id="buscar">Buscar profissionais</button>
-
-<p id="status" role="status" aria-live="polite"></p>
-
-<div id="resultados"></div>
-</main>
+<p>Escolha o município onde deseja receber atendimento. Os demais filtros são opcionais.</p>
+<form id="filtros">
+<div class="busca-grid"><div><label for="estado">Estado</label><select id="estado" required><option value="">Selecione o estado</option></select></div><div><label for="cidade">Município</label><select id="cidade" required disabled><option value="">Selecione o município</option></select></div></div>
+<fieldset><legend>Qualificações e serviços</legend>
+<label for="especialidade">Especialidade</label><input id="especialidade" placeholder="Ex.: Odontogeriatria">
+<label for="habilitacao">Habilitação</label><input id="habilitacao" placeholder="Digite a habilitação">
+<label for="servico">Serviço</label><input id="servico" placeholder="Ex.: Avaliação odontológica">
+</fieldset><fieldset><legend>Disponibilidade habitual</legend><div class="busca-grid"><div><label for="dia">Dia da semana</label><select id="dia"><option value="">Qualquer dia</option></select></div><div><label for="periodo">Período</label><select id="periodo"><option value="">Qualquer período</option></select></div></div>
+<label class="busca-check"><input type="checkbox" id="disponivel">Somente profissionais com horários informados ou atendimento sob consulta, não temporariamente indisponíveis</label>
+<p class="note">Os filtros de dia e período consideram apenas horários cadastrados. Não representam agendamento ou disponibilidade em tempo real.</p></fieldset>
+<div class="busca-grid"><button id="buscar" type="submit">Buscar profissionais</button><button type="button" class="secondary" id="limpar">Limpar filtros</button></div></form>
+<p id="status" role="status" aria-live="polite"></p><div id="resultados"></div></main>
 <script>
 const clienteSupabase = window.supabase.createClient(
 "https://sbubucjwxgtckdwedose.supabase.co",
 "sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu"
 );
-const estado = document.getElementById("estado");
-const cidade = document.getElementById("cidade");
-const status = document.getElementById("status");
-
-async function carregarEstados() {
-
- 
-
-try {
-
-const resposta = await fetch(
-"https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
-);
-
-if (!resposta.ok) throw new Error();
-
-const estados = await resposta.json();
-
-estados.forEach(uf => {
-
-const opcao = document.createElement("option");
-
-opcao.value = uf.sigla;
-opcao.textContent = uf.nome;
-
-estado.appendChild(opcao);
-
-});
-
-} catch (erro) {
-
-status.textContent =
-"Não foi possível carregar os estados.";
-
+const el = id => document.getElementById(id);
+const dias = {segunda:"Segunda-feira",terca:"Terça-feira",quarta:"Quarta-feira",quinta:"Quinta-feira",sexta:"Sexta-feira",sabado:"Sábado",domingo:"Domingo"};
+const periodos = {manha:"Manhã",tarde:"Tarde",noite:"Noite"};
+const normalizar = texto => String(texto ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const lista = v => Array.isArray(v) ? v : [];
+const horarios = d => Object.keys(dias).flatMap(dia => Object.keys(periodos).filter(p => lista(d.horarios_atendimento?.[dia]).includes(p)).map(p => [dia,p]));
+function corresponde(d,f){
+ if (![d.cidade,...lista(d.cidades_atendidas)].some(c => normalizar(c)===normalizar(f.cidade))) return false;
+ if (![[d.especialidades,f.especialidade],[d.habilitacoes,f.habilitacao],[d.servicos_oferecidos,f.servico]].every(([val,t])=>!normalizar(t)||lista(val).some(v=>normalizar(v).includes(normalizar(t))))) return false;
+ const h=horarios(d);
+ if(f.disponivel && (d.indisponivel_temporariamente || (!h.length && !d.atendimento_sob_consulta))) return false;
+ if((f.dia||f.periodo) && (d.indisponivel_temporariamente || !h.some(([dia,p])=>(!f.dia||dia===f.dia)&&(!f.periodo||p===f.periodo)))) return false;
+ return true;
 }
-
+function opcao(select,value,label){const o=document.createElement("option");o.value=value;o.textContent=label;select.append(o);}
+Object.entries(dias).forEach(([v,l])=>opcao(el("dia"),v,l));Object.entries(periodos).forEach(([v,l])=>opcao(el("periodo"),v,l));
+let buscaId=0, municipioId=0;
+function limparResultados(){buscaId++;el("resultados").replaceChildren();el("status").textContent="";el("buscar").disabled=false;}
+async function carregarEstados(){try{const r=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome");if(!r.ok)throw Error();(await r.json()).forEach(u=>opcao(el("estado"),u.sigla,u.nome));}catch(e){el("status").textContent="Não foi possível carregar os estados. Recarregue a página.";}}
+el("estado").addEventListener("change",async()=>{limparResultados();const id=++municipioId;const uf=el("estado").value;el("cidade").replaceChildren();opcao(el("cidade"),"","Selecione o município");el("cidade").disabled=true;if(!uf)return;try{const r=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados/"+encodeURIComponent(uf)+"/municipios?orderBy=nome");if(!r.ok)throw Error();const m=await r.json();if(id!==municipioId)return;m.forEach(c=>opcao(el("cidade"),c.nome,c.nome));el("cidade").disabled=false;}catch(e){if(id===municipioId)el("status").textContent="Não foi possível carregar os municípios. Selecione novamente o estado.";}});
+el("filtros").addEventListener("input",e=>{if(e.target.id!=="estado")limparResultados();});
+el("limpar").onclick=()=>{el("filtros").reset();municipioId++;el("cidade").replaceChildren();opcao(el("cidade"),"","Selecione o município");el("cidade").disabled=true;limparResultados();};
+function criarCard(d){
+ const card=document.createElement("article");card.className="card profissional";
+ const add=(tag,text,pai=card)=>{const e=document.createElement(tag);e.textContent=text;pai.append(e);return e;};
+ add("h3",d.nome);add("p","CRO: "+d.cro+" - "+d.uf_cro).className="note";
+ const h=horarios(d);const situacao=d.indisponivel_temporariamente?"Temporariamente indisponível":h.length?"Horários cadastrados":d.atendimento_sob_consulta?"Atendimento sob consulta":"Horários não informados";
+ add("p",situacao).className="situacao-busca";
+ for(const [rotulo,valor] of [["Município principal",d.cidade],["Municípios atendidos",[...new Set([d.cidade,...lista(d.cidades_atendidas)].filter(Boolean))].join(", ")],["Especialidades",lista(d.especialidades).join(", ")],["Habilitações",lista(d.habilitacoes).join(", ")],["Serviços",lista(d.servicos_oferecidos).join(", ")],["Descrição",d.descricao]]){if(valor){const p=add("p","");add("strong",rotulo+": ",p);p.append(document.createTextNode(valor));}}
+ const bloco=add("div","");bloco.className="resumo-horarios";add("strong","Disponibilidade profissional",bloco);
+ if(d.indisponivel_temporariamente)add("p","Temporariamente indisponível",bloco);else{for(const dia of Object.keys(dias)){const ps=h.filter(x=>x[0]===dia).map(x=>periodos[x[1]]);if(ps.length)add("p",dias[dia]+": "+ps.join(", "),bloco);}if(d.atendimento_sob_consulta)add("p","Atendimento mediante consulta",bloco);if(d.disponibilidade)add("p",d.disponibilidade,bloco);add("p","Confirme diretamente com o profissional. Não é uma reserva.",bloco);}
+ let n=String(d.whatsapp||"").replace(/\D/g,"");if(n.length===10||n.length===11)n="55"+n;
+ if(/^55\d{10,11}$/.test(n)){const a=add("a","Contato pelo WhatsApp");a.className="contact";a.href="https://wa.me/"+n+"?text="+encodeURIComponent("Olá! Encontrei seu perfil no Odonto em Casa e gostaria de informações sobre atendimento domiciliar.");a.target="_blank";a.rel="noopener noreferrer";}else add("p","WhatsApp não informado.").className="note";
+ return card;
 }
-
-estado.addEventListener("change", async function () {
-
-cidade.innerHTML =
-'<option value="">Selecione o município</option>';
-
-cidade.disabled = true;
-status.textContent = "";
-
-if (!estado.value) return;
-
-const ufSelecionada = estado.value;
-
-try {
-
-const resposta = await fetch(
-"https://servicodados.ibge.gov.br/api/v1/localidades/estados/" +
-ufSelecionada + "/municipios?orderBy=nome"
-);
-
-if (!resposta.ok) throw new Error();
-
-const municipios = await resposta.json();
-
-if (estado.value !== ufSelecionada) return;
-
-municipios.forEach(municipio => {
-
-const opcao = document.createElement("option");
-
-opcao.value = municipio.nome;
-opcao.textContent = municipio.nome;
-
-cidade.appendChild(opcao);
-
-});
-
-cidade.disabled = false;
-
-} catch (erro) {
-
-if (estado.value === ufSelecionada) {
-status.textContent =
-"Não foi possível carregar os municípios.";
-}
-
-}
-
-});
-
+el("filtros").addEventListener("submit",async e=>{e.preventDefault();if(!el("estado").value||!el("cidade").value){el("status").textContent="Selecione o estado e o município.";return;}limparResultados();const id=buscaId;const f=Object.fromEntries(["estado","cidade","especialidade","habilitacao","servico","dia","periodo"].map(k=>[k,el(k).value]));f.disponivel=el("disponivel").checked;el("buscar").disabled=true;el("status").textContent="Buscando profissionais...";try{let encontrados=[];const tamanho=200;for(let inicio=0;;inicio+=tamanho){const {data,error}=await clienteSupabase.from("dentistas_publicos").select("nome,cro,uf_cro,especialidades,habilitacoes,servicos_oferecidos,descricao,estado,cidade,cidades_atendidas,whatsapp,disponibilidade,horarios_atendimento,atendimento_sob_consulta,indisponivel_temporariamente").eq("estado",f.estado).order("nome").order("uf_cro").order("cro").range(inicio,inicio+tamanho-1);if(id!==buscaId)return;if(error)throw error;encontrados.push(...data.filter(d=>corresponde(d,f)));if(data.length<tamanho)break;}el("status").textContent="Profissionais encontrados: "+encontrados.length;if(!encontrados.length)el("resultados").textContent="Nenhum profissional encontrado para os critérios informados.";else encontrados.forEach(d=>el("resultados").append(criarCard(d)));}catch(e){if(id===buscaId)el("status").textContent="Não foi possível concluir a busca. Tente novamente.";}finally{if(id===buscaId)el("buscar").disabled=false;}});
 carregarEstados();
-document.getElementById("buscar").addEventListener(
-"click", async function () {
-
-const resultados = document.getElementById("resultados");
-
-resultados.textContent = "";
-
-if (!estado.value || !cidade.value) {
-status.textContent = "Selecione o estado e o município.";
-return;
-}
-
-status.textContent = "Buscando profissionais...";
-
-const { data, error } = await clienteSupabase
-.from("dentistas_publicos")
-.select("*")
-.eq("estado", estado.value)
-.order("nome");
-
-if (error) {
-status.textContent = "Erro ao buscar profissionais.";
-return;
-}
-
-const normalizar = texto =>
-(texto || "")
-.normalize("NFD")
-.replace(/[\u0300-\u036f]/g, "")
-.toLowerCase()
-.trim();
-
-const termo = normalizar(
-document.getElementById("especialidade").value
-);
-
-const encontrados = data.filter(dentista => {
-const atendeMunicipio =
-dentista.cidade === cidade.value ||
-(dentista.cidades_atendidas || []).includes(cidade.value);
-
-const qualificacoes = [
-...(dentista.especialidades || []),
-...(dentista.habilitacoes || []),
-...(dentista.servicos_oferecidos || [])
-];
-
-const corresponde =
-!termo || qualificacoes.some(item =>
-normalizar(item).includes(termo)
-);
-
-return atendeMunicipio && corresponde;
-});
-
-status.textContent =
-"Profissionais encontrados: " + encontrados.length;
-if (encontrados.length === 0) {
-resultados.textContent =
-"Nenhum profissional encontrado para os critérios informados.";
-return;
-}
-
-encontrados.forEach(dentista => {
-
-const card = document.createElement("div");
-card.className = "card";
-
-const titulo = document.createElement("h3");
-titulo.textContent = dentista.nome;
-card.appendChild(titulo);
-
-const dados = [
-["CRO", dentista.cro + " - " + dentista.uf_cro],
-["Especialidades", (dentista.especialidades || []).join(", ")],
-["Habilitações", (dentista.habilitacoes || []).join(", ")],
-["Serviços", (dentista.servicos_oferecidos || []).join(", ")],
-["Município", dentista.cidade],
-["Descrição", dentista.descricao],
-["Observações de disponibilidade", dentista.indisponivel_temporariamente ? null : dentista.disponibilidade]
-];
-
-dados.forEach(([rotulo, valor]) => {
-if (!valor) return;
-
-const p = document.createElement("p");
-p.textContent = rotulo + ": " + valor;
-card.appendChild(p);
-});
-const bloco = document.createElement("div");
-bloco.className = "resumo-horarios";
-const cab = document.createElement("strong");
-cab.textContent = "Disponibilidade profissional";
-bloco.appendChild(cab);
-const informar = texto => { const p = document.createElement("p"); p.textContent = texto; bloco.appendChild(p); };
-if (dentista.indisponivel_temporariamente) {
-    informar("Temporariamente indisponível");
-} else {
-    const dias = {segunda:"Segunda-feira",terca:"Terça-feira",quarta:"Quarta-feira",quinta:"Quinta-feira",sexta:"Sexta-feira",sabado:"Sábado",domingo:"Domingo"};
-    const periodos = {manha:"Manhã",tarde:"Tarde",noite:"Noite"};
-    const h = dentista.horarios_atendimento || {};
-    let temHorario = false;
-    Object.entries(dias).forEach(([dia, nome]) => {
-        const valores = Array.isArray(h[dia]) ? Object.keys(periodos).filter(p => h[dia].includes(p)).map(p => periodos[p]) : [];
-        if (valores.length) { informar(nome + ": " + valores.join(", ")); temHorario = true; }
-    });
-    if (dentista.atendimento_sob_consulta) informar("Atendimento mediante consulta");
-    if (!temHorario && !dentista.atendimento_sob_consulta) informar("Horários não informados. Consulte o profissional.");
-    else informar("Confirme a disponibilidade diretamente com o profissional.");
-}
-card.appendChild(bloco);
-let numero = (dentista.whatsapp || "").replace(/\D/g, "");
-
-if (numero.length === 10 || numero.length === 11) {
-numero = "55" + numero;
-}
-
-if (/^55\d{10,11}$/.test(numero)) {
-
-const contato = document.createElement("a");
-
-contato.className = "contact";
-contato.textContent = "Entrar em contato pelo WhatsApp";
-
-contato.href = "https://wa.me/" + numero;
-
-contato.target = "_blank";
-contato.rel = "noopener noreferrer";
-
-card.appendChild(contato);
-
-}
-resultados.appendChild(card);
-
-});
-});
 </script>
 <footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
 </body>
