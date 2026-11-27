@@ -55,40 +55,7 @@ const status = document.getElementById("status");
 
 async function carregarEstados() {
 
-  document.getElementById("buscar").addEventListener(
-"click", async function () {
-
-const resultados = document.getElementById("resultados");
-
-resultados.textContent = "";
-
-if (!estado.value || !cidade.value) {
-status.textContent = "Selecione o estado e o município.";
-return;
-}
-
-status.textContent = "Buscando profissionais...";
-
-const { data, error } = await clienteSupabase
-.from("dentistas_publicos")
-.select("*")
-.eq("estado", estado.value)
-.order("nome");
-
-if (error) {
-status.textContent = "Erro ao buscar profissionais.";
-return;
-}
-
-const encontrados = data.filter(dentista =>
-dentista.cidade === cidade.value ||
-(dentista.cidades_atendidas || []).includes(cidade.value)
-);
-
-status.textContent =
-"Profissionais encontrados: " + encontrados.length;
-
-});
+ 
 
 try {
 
@@ -195,16 +162,41 @@ status.textContent = "Erro ao buscar profissionais.";
 return;
 }
 
-const encontrados = data.filter(dentista =>
-dentista.cidade === cidade.value ||
-(dentista.cidades_atendidas || []).includes(cidade.value)
+const normalizar = texto =>
+(texto || "")
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g, "")
+.toLowerCase()
+.trim();
+
+const termo = normalizar(
+document.getElementById("especialidade").value
 );
+
+const encontrados = data.filter(dentista => {
+const atendeMunicipio =
+dentista.cidade === cidade.value ||
+(dentista.cidades_atendidas || []).includes(cidade.value);
+
+const qualificacoes = [
+...(dentista.especialidades || []),
+...(dentista.habilitacoes || []),
+...(dentista.servicos_oferecidos || [])
+];
+
+const corresponde =
+!termo || qualificacoes.some(item =>
+normalizar(item).includes(termo)
+);
+
+return atendeMunicipio && corresponde;
+});
 
 status.textContent =
 "Profissionais encontrados: " + encontrados.length;
 if (encontrados.length === 0) {
 resultados.textContent =
-"Nenhum profissional disponível neste município.";
+"Nenhum profissional encontrado para os critérios informados.";
 return;
 }
 
