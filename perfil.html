@@ -58,8 +58,10 @@ placeholder="Separe por vírgulas"></textarea>
 <textarea id="servicos_oferecidos"
 placeholder="Separe por vírgulas"></textarea>
 
-<label for="disponibilidade">Disponibilidade</label>
+<label for="disponibilidade">Disponibilidade (observações complementares)</label>
 <textarea id="disponibilidade"></textarea>
+<p class="note">Para configurar dias e períodos, salve o cadastro primeiro e acesse Minha disponibilidade.</p>
+<a id="link_horarios" class="contact" href="disponibilidade.html" hidden>Configurar dias e períodos</a>
 
 <label for="whatsapp">WhatsApp profissional</label>
 <input id="whatsapp" type="tel">
@@ -220,6 +222,7 @@ return;
 if (resultado.data) {
 
 perfilExistente = true;
+elemento("link_horarios").hidden = false;
 fotoAtual = resultado.data.foto_url ?? null;
 
 

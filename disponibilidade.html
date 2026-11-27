@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Minha disponibilidade - Odonto em Casa</title><link rel="stylesheet" href="estilo.css"></head>
+<body class="disponibilidade"><header><h1>ODONTO EM CASA</h1><p>Minha disponibilidade</p><nav aria-label="Navegação principal"><a href="painel.html">Meu painel</a><a href="perfil.html">Meu perfil</a></nav></header>
+<main><h2>Horários de atendimento</h2><p id="status" role="status" aria-live="polite">Verificando acesso...</p><p id="anterior" class="note" hidden></p>
+<form id="horarios" hidden><p>Selecione os períodos em que costuma atender. Esta informação não representa uma reserva de consulta.</p>
+<div class="tabela-horarios"><table><thead><tr><th scope="col">Dia</th><th scope="col">Manhã</th><th scope="col">Tarde</th><th scope="col">Noite</th></tr></thead><tbody><tr><th scope="row">Segunda-feira</th><td><input type="checkbox" data-dia="segunda" value="manha" aria-label="Segunda-feira, Manhã"></td><td><input type="checkbox" data-dia="segunda" value="tarde" aria-label="Segunda-feira, Tarde"></td><td><input type="checkbox" data-dia="segunda" value="noite" aria-label="Segunda-feira, Noite"></td></tr>
+<tr><th scope="row">Terça-feira</th><td><input type="checkbox" data-dia="terca" value="manha" aria-label="Terça-feira, Manhã"></td><td><input type="checkbox" data-dia="terca" value="tarde" aria-label="Terça-feira, Tarde"></td><td><input type="checkbox" data-dia="terca" value="noite" aria-label="Terça-feira, Noite"></td></tr>
+<tr><th scope="row">Quarta-feira</th><td><input type="checkbox" data-dia="quarta" value="manha" aria-label="Quarta-feira, Manhã"></td><td><input type="checkbox" data-dia="quarta" value="tarde" aria-label="Quarta-feira, Tarde"></td><td><input type="checkbox" data-dia="quarta" value="noite" aria-label="Quarta-feira, Noite"></td></tr>
+<tr><th scope="row">Quinta-feira</th><td><input type="checkbox" data-dia="quinta" value="manha" aria-label="Quinta-feira, Manhã"></td><td><input type="checkbox" data-dia="quinta" value="tarde" aria-label="Quinta-feira, Tarde"></td><td><input type="checkbox" data-dia="quinta" value="noite" aria-label="Quinta-feira, Noite"></td></tr>
+<tr><th scope="row">Sexta-feira</th><td><input type="checkbox" data-dia="sexta" value="manha" aria-label="Sexta-feira, Manhã"></td><td><input type="checkbox" data-dia="sexta" value="tarde" aria-label="Sexta-feira, Tarde"></td><td><input type="checkbox" data-dia="sexta" value="noite" aria-label="Sexta-feira, Noite"></td></tr>
+<tr><th scope="row">Sábado</th><td><input type="checkbox" data-dia="sabado" value="manha" aria-label="Sábado, Manhã"></td><td><input type="checkbox" data-dia="sabado" value="tarde" aria-label="Sábado, Tarde"></td><td><input type="checkbox" data-dia="sabado" value="noite" aria-label="Sábado, Noite"></td></tr>
+<tr><th scope="row">Domingo</th><td><input type="checkbox" data-dia="domingo" value="manha" aria-label="Domingo, Manhã"></td><td><input type="checkbox" data-dia="domingo" value="tarde" aria-label="Domingo, Tarde"></td><td><input type="checkbox" data-dia="domingo" value="noite" aria-label="Domingo, Noite"></td></tr>
+</tbody></table></div>
+<label><input type="checkbox" id="sob_consulta"> Atendimento mediante consulta</label>
+<label><input type="checkbox" id="indisponivel"> Indisponível temporariamente</label>
+<p class="note">A indisponibilidade temporária tem prioridade na busca pública. Seus horários ficam guardados para quando voltar a atender. As observações complementares podem ser editadas no perfil.</p>
+<button id="salvar" type="submit">Salvar disponibilidade</button></form><a class="contact secondary" href="painel.html">Voltar ao painel</a></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+const clienteSupabase = window.supabase.createClient(
+"https://sbubucjwxgtckdwedose.supabase.co",
+"sb_publishable_gxSIMwZsEcWE8jkCIN3hqQ_4ATyz7Gu"
+);
+const el = id => document.getElementById(id);
+const form = el("horarios");
+const caixas = [...form.querySelectorAll("[data-dia]")];
+async function iniciar() {
+ try {
+ const {data,error} = await clienteSupabase.auth.getUser();
+ if(error || !data.user){location.replace("index.html");return;}
+ const r = await clienteSupabase.from("dentistas").select("disponibilidade,horarios_atendimento,atendimento_sob_consulta,indisponivel_temporariamente").eq("usuario_id",data.user.id).maybeSingle();
+ if(r.error) throw r.error;
+ if(!r.data){el("status").textContent="Preencha seu perfil profissional antes de configurar os horários.";return;}
+ const h=r.data.horarios_atendimento || {};
+ caixas.forEach(c=>{c.checked=Array.isArray(h[c.dataset.dia]) && h[c.dataset.dia].includes(c.value);});
+ el("sob_consulta").checked=r.data.atendimento_sob_consulta===true;
+ el("indisponivel").checked=r.data.indisponivel_temporariamente===true;
+ if(r.data.disponibilidade){el("anterior").textContent="Observações do perfil: "+r.data.disponibilidade;el("anterior").hidden=false;}
+ el("status").textContent="Configure sua disponibilidade profissional.";form.hidden=false;
+ }catch(e){el("status").textContent="Não foi possível carregar a disponibilidade. Recarregue a página.";}
+}
+form.addEventListener("submit",async e=>{
+ e.preventDefault();if(form.hidden || el("salvar").disabled)return;
+ const h={};caixas.filter(c=>c.checked).forEach(c=>(h[c.dataset.dia] ||= []).push(c.value));
+ const campos=[...form.querySelectorAll("input,button")];campos.forEach(c=>c.disabled=true);
+ el("status").textContent="Salvando...";
+ try{
+ const {error}=await clienteSupabase.rpc("salvar_disponibilidade",{p_horarios:h,p_sob_consulta:el("sob_consulta").checked,p_indisponivel:el("indisponivel").checked});
+ if(error)throw error;
+ el("status").textContent="Disponibilidade salva com sucesso!";
+ }catch(e){el("status").textContent="Não foi possível salvar. Tente novamente.";}
+ finally{campos.forEach(c=>c.disabled=false);}
+});
+iniciar();
+</script><footer>Odonto em Casa · Atendimento odontológico domiciliar</footer></body></html>

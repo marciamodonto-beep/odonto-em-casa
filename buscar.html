@@ -219,7 +219,7 @@ const dados = [
 ["Serviços", (dentista.servicos_oferecidos || []).join(", ")],
 ["Município", dentista.cidade],
 ["Descrição", dentista.descricao],
-["Disponibilidade", dentista.disponibilidade]
+["Observações de disponibilidade", dentista.indisponivel_temporariamente ? null : dentista.disponibilidade]
 ];
 
 dados.forEach(([rotulo, valor]) => {
@@ -229,6 +229,28 @@ const p = document.createElement("p");
 p.textContent = rotulo + ": " + valor;
 card.appendChild(p);
 });
+const bloco = document.createElement("div");
+bloco.className = "resumo-horarios";
+const cab = document.createElement("strong");
+cab.textContent = "Disponibilidade profissional";
+bloco.appendChild(cab);
+const informar = texto => { const p = document.createElement("p"); p.textContent = texto; bloco.appendChild(p); };
+if (dentista.indisponivel_temporariamente) {
+    informar("Temporariamente indisponível");
+} else {
+    const dias = {segunda:"Segunda-feira",terca:"Terça-feira",quarta:"Quarta-feira",quinta:"Quinta-feira",sexta:"Sexta-feira",sabado:"Sábado",domingo:"Domingo"};
+    const periodos = {manha:"Manhã",tarde:"Tarde",noite:"Noite"};
+    const h = dentista.horarios_atendimento || {};
+    let temHorario = false;
+    Object.entries(dias).forEach(([dia, nome]) => {
+        const valores = Array.isArray(h[dia]) ? Object.keys(periodos).filter(p => h[dia].includes(p)).map(p => periodos[p]) : [];
+        if (valores.length) { informar(nome + ": " + valores.join(", ")); temHorario = true; }
+    });
+    if (dentista.atendimento_sob_consulta) informar("Atendimento mediante consulta");
+    if (!temHorario && !dentista.atendimento_sob_consulta) informar("Horários não informados. Consulte o profissional.");
+    else informar("Confirme a disponibilidade diretamente com o profissional.");
+}
+card.appendChild(bloco);
 let numero = (dentista.whatsapp || "").replace(/\D/g, "");
 
 if (numero.length === 10 || numero.length === 11) {
