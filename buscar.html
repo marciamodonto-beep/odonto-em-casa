@@ -4,23 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Buscar dentistas - Odonto em Casa</title>
+<title>Buscar profissionais - Odonto em Casa</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="estilo.css">
 </head>
 
 <body class="buscar">
 
-<header><h1>ODONTO EM CASA</h1><p>Encontre atendimento odontológico domiciliar</p><nav aria-label="Navegação principal"><a href="index.html">Área do dentista</a></nav></header>
+<header><h1>ODONTO EM CASA</h1><p>Encontre profissionais de saúde para atendimento domiciliar</p><nav aria-label="Navegação principal"><a href="index.html">Área do profissional</a></nav></header>
 <main>
-<h2>Encontre um dentista para atendimento domiciliar</h2>
+<h2>Encontre um profissional para atendimento domiciliar</h2>
 <p>Escolha o município onde deseja receber atendimento. Os demais filtros são opcionais.</p>
 <form id="filtros">
+<label for="categoria">Categoria profissional</label><select id="categoria" required disabled><option value="">Carregando categorias...</option></select>
 <div class="busca-grid"><div><label for="estado">Estado</label><select id="estado" required><option value="">Selecione o estado</option></select></div><div><label for="cidade">Município</label><select id="cidade" required disabled><option value="">Selecione o município</option></select></div></div>
 <fieldset><legend>Qualificações e serviços</legend>
-<label for="especialidade">Especialidade</label><input id="especialidade" placeholder="Ex.: Odontogeriatria">
+<label for="especialidade">Especialidade</label><input id="especialidade" placeholder="Digite a especialidade">
 <label for="habilitacao">Habilitação</label><input id="habilitacao" placeholder="Digite a habilitação">
-<label for="servico">Serviço</label><input id="servico" placeholder="Ex.: Avaliação odontológica">
+<label for="servico">Serviço</label><input id="servico" placeholder="Digite o serviço">
 </fieldset><fieldset><legend>Disponibilidade habitual</legend><div class="busca-grid"><div><label for="dia">Dia da semana</label><select id="dia"><option value="">Qualquer dia</option></select></div><div><label for="periodo">Período</label><select id="periodo"><option value="">Qualquer período</option></select></div></div>
 <label class="busca-check"><input type="checkbox" id="disponivel">Somente profissionais com horários informados ou atendimento sob consulta, não temporariamente indisponíveis</label>
 <p class="note">Os filtros de dia e período consideram apenas horários cadastrados. Não representam agendamento ou disponibilidade em tempo real.</p></fieldset>
@@ -52,11 +53,11 @@ function limparResultados(){buscaId++;el("resultados").replaceChildren();el("sta
 async function carregarEstados(){try{const r=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome");if(!r.ok)throw Error();(await r.json()).forEach(u=>opcao(el("estado"),u.sigla,u.nome));}catch(e){el("status").textContent="Não foi possível carregar os estados. Recarregue a página.";}}
 el("estado").addEventListener("change",async()=>{limparResultados();const id=++municipioId;const uf=el("estado").value;el("cidade").replaceChildren();opcao(el("cidade"),"","Selecione o município");el("cidade").disabled=true;if(!uf)return;try{const r=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados/"+encodeURIComponent(uf)+"/municipios?orderBy=nome");if(!r.ok)throw Error();const m=await r.json();if(id!==municipioId)return;m.forEach(c=>opcao(el("cidade"),c.nome,c.nome));el("cidade").disabled=false;}catch(e){if(id===municipioId)el("status").textContent="Não foi possível carregar os municípios. Selecione novamente o estado.";}});
 el("filtros").addEventListener("input",e=>{if(e.target.id!=="estado")limparResultados();});
-el("limpar").onclick=()=>{el("filtros").reset();municipioId++;el("cidade").replaceChildren();opcao(el("cidade"),"","Selecione o município");el("cidade").disabled=true;limparResultados();};
+el("limpar").onclick=()=>{el("filtros").reset();if(el("categoria").options.length===2)el("categoria").selectedIndex=1;municipioId++;el("cidade").replaceChildren();opcao(el("cidade"),"","Selecione o município");el("cidade").disabled=true;limparResultados();};
 function criarCard(d){
  const card=document.createElement("article");card.className="card profissional";
  const add=(tag,text,pai=card)=>{const e=document.createElement(tag);e.textContent=text;pai.append(e);return e;};
- add("h3",d.nome);add("p","CRO: "+d.cro+" - "+d.uf_cro).className="note";
+ add("h3",d.nome);add("p",d.profissao).className="note";add("p",d.conselho+": "+d.registro_profissional+" - "+d.uf_registro_profissional).className="note";if(d.exige_supervisao)add("p","Atuação sujeita à supervisão profissional.");
  const h=horarios(d);const situacao=d.indisponivel_temporariamente?"Temporariamente indisponível":h.length?"Horários cadastrados":d.atendimento_sob_consulta?"Atendimento sob consulta":"Horários não informados";
  add("p",situacao).className="situacao-busca";
  for(const [rotulo,valor] of [["Município principal",d.cidade],["Municípios atendidos",[...new Set([d.cidade,...lista(d.cidades_atendidas)].filter(Boolean))].join(", ")],["Especialidades",lista(d.especialidades).join(", ")],["Habilitações",lista(d.habilitacoes).join(", ")],["Serviços",lista(d.servicos_oferecidos).join(", ")],["Descrição",d.descricao]]){if(valor){const p=add("p","");add("strong",rotulo+": ",p);p.append(document.createTextNode(valor));}}
@@ -66,9 +67,10 @@ function criarCard(d){
  if(/^55\d{10,11}$/.test(n)){const a=add("a","Contato pelo WhatsApp");a.className="contact";a.href="https://wa.me/"+n+"?text="+encodeURIComponent("Olá! Encontrei seu perfil no Odonto em Casa e gostaria de informações sobre atendimento domiciliar.");a.target="_blank";a.rel="noopener noreferrer";}else add("p","WhatsApp não informado.").className="note";
  return card;
 }
-el("filtros").addEventListener("submit",async e=>{e.preventDefault();if(!el("estado").value||!el("cidade").value){el("status").textContent="Selecione o estado e o município.";return;}limparResultados();const id=buscaId;const f=Object.fromEntries(["estado","cidade","especialidade","habilitacao","servico","dia","periodo"].map(k=>[k,el(k).value]));f.disponivel=el("disponivel").checked;el("buscar").disabled=true;el("status").textContent="Buscando profissionais...";try{let encontrados=[];const tamanho=200;for(let inicio=0;;inicio+=tamanho){const {data,error}=await clienteSupabase.from("dentistas_publicos").select("nome,cro,uf_cro,especialidades,habilitacoes,servicos_oferecidos,descricao,estado,cidade,cidades_atendidas,whatsapp,disponibilidade,horarios_atendimento,atendimento_sob_consulta,indisponivel_temporariamente").eq("estado",f.estado).order("nome").order("uf_cro").order("cro").range(inicio,inicio+tamanho-1);if(id!==buscaId)return;if(error)throw error;encontrados.push(...data.filter(d=>corresponde(d,f)));if(data.length<tamanho)break;}el("status").textContent="Profissionais encontrados: "+encontrados.length;if(!encontrados.length)el("resultados").textContent="Nenhum profissional encontrado para os critérios informados.";else encontrados.forEach(d=>el("resultados").append(criarCard(d)));}catch(e){if(id===buscaId)el("status").textContent="Não foi possível concluir a busca. Tente novamente.";}finally{if(id===buscaId)el("buscar").disabled=false;}});
-carregarEstados();
+el("filtros").addEventListener("submit",async e=>{e.preventDefault();if(!el("categoria").value||!el("estado").value||!el("cidade").value){el("status").textContent="Selecione a categoria, o estado e o município.";return;}limparResultados();const id=buscaId;const f=Object.fromEntries(["categoria","estado","cidade","especialidade","habilitacao","servico","dia","periodo"].map(k=>[k,el(k).value]));f.disponivel=el("disponivel").checked;el("buscar").disabled=true;el("status").textContent="Buscando profissionais...";try{let encontrados=[];const tamanho=200;for(let inicio=0;;inicio+=tamanho){const {data,error}=await clienteSupabase.from("profissionais_publicos").select("nome,categoria_codigo,profissao,conselho,registro_profissional,uf_registro_profissional,exige_supervisao,especialidades,habilitacoes,servicos_oferecidos,descricao,estado,cidade,cidades_atendidas,whatsapp,disponibilidade,horarios_atendimento,atendimento_sob_consulta,indisponivel_temporariamente").eq("categoria_codigo",f.categoria).eq("estado",f.estado).order("nome").order("uf_registro_profissional").order("registro_profissional").range(inicio,inicio+tamanho-1);if(id!==buscaId)return;if(error)throw error;encontrados.push(...data.filter(d=>corresponde(d,f)));if(data.length<tamanho)break;}el("status").textContent="Profissionais encontrados: "+encontrados.length;if(!encontrados.length)el("resultados").textContent="Nenhum profissional encontrado para os critérios informados.";else encontrados.forEach(d=>el("resultados").append(criarCard(d)));}catch(e){if(id===buscaId)el("status").textContent="Não foi possível concluir a busca. Tente novamente.";}finally{if(id===buscaId)el("buscar").disabled=false;}});
+async function carregarCategorias(){const c=el("categoria");try{const {data,error}=await clienteSupabase.from("categorias_profissionais_ativas").select("codigo,nome").order("ordem");if(error)throw error;c.replaceChildren();opcao(c,"","Selecione a profissão");for(const item of data)opcao(c,item.codigo,item.nome);c.disabled=!data.length;if(data.length===1)c.selectedIndex=1;}catch(e){c.replaceChildren();opcao(c,"","Categorias indisponíveis");el("status").textContent="Não foi possível carregar as categorias. Recarregue a página.";}}
+carregarCategorias();carregarEstados();
 </script>
-<footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
+<footer>Odonto em Casa · Saúde domiciliar</footer>
 </body>
 </html>

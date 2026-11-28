@@ -14,7 +14,7 @@
 <header>
 <h1>ODONTO EM CASA</h1>
 <p>Meu perfil profissional</p>
-<nav aria-label="Navegação principal"><a href="buscar.html">Buscar dentistas</a><a href="painel.html">Meu painel</a></nav>
+<nav aria-label="Navegação principal"><a href="buscar.html">Buscar profissionais</a><a href="painel.html">Meu painel</a></nav>
 </header>
 
 <main id="area" hidden>
@@ -23,6 +23,8 @@
 <p id="status"></p><p id="observacao_cadastro" role="status" hidden></p>
 
 <form id="formulario">
+<label for="categoria_atual">Categoria profissional</label><input id="categoria_atual" value="Cirurgião-dentista — CRO" readonly>
+<p class="note">Nesta fase, somente a odontologia está habilitada para cadastro.</p>
 
 <label for="nome">Nome completo</label>
 <input id="nome" required>
@@ -80,7 +82,7 @@ fornecidas são verdadeiras.
 <input type="checkbox"
 id="autorizacao_publicacao" required>
 Autorizo a publicação das informações
-do meu perfil profissional após aprovação.
+do meu perfil profissional após aprovação. Posso retirar esta autorização ao editar meu perfil.
 </label>
 
 <button id="salvar" type="submit">
@@ -458,6 +460,6 @@ botao.disabled = false;
 );
 </script>
 
-<footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
+<footer>Odonto em Casa · Saúde domiciliar</footer>
 </body>
 </html>

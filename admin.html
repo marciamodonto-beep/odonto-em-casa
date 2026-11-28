@@ -14,7 +14,7 @@
 <header>
 <h1>ODONTO EM CASA</h1>
 <p>Painel Administrativo</p>
-<nav aria-label="Navegação principal"><a href="buscar.html">Buscar dentistas</a><a href="painel.html">Meu painel</a></nav>
+<nav aria-label="Navegação principal"><a href="buscar.html">Buscar profissionais</a><a href="painel.html">Meu painel</a></nav>
 </header>
 
 <main>
@@ -139,7 +139,7 @@ function renderizar(){
  if(!filtrados.length) lista.textContent="Nenhum cadastro encontrado.";
  for(const d of filtrados){
   const card=document.createElement("div"); card.className="card";
-  for(const [label,key] of [["Nome","nome"],["CRO","cro"],["UF do CRO","uf_cro"],["Estado","estado"],["Município","cidade"],["Especialidades","especialidades"],["Habilitações","habilitacoes"],["Serviços","servicos_oferecidos"],["Descrição","descricao"],["Municípios atendidos","cidades_atendidas"],["WhatsApp","whatsapp"],["Instagram","instagram"],["Disponibilidade","disponibilidade"],["Observação ao dentista","observacao_admin"]]) campo(card,label,d[key]);
+  for(const [label,key] of [["Nome","nome"],["Categoria","categoria_codigo"],["CRO","cro"],["UF do CRO","uf_cro"],["Estado","estado"],["Município","cidade"],["Especialidades","especialidades"],["Habilitações","habilitacoes"],["Serviços","servicos_oferecidos"],["Descrição","descricao"],["Municípios atendidos","cidades_atendidas"],["WhatsApp","whatsapp"],["Instagram","instagram"],["Disponibilidade","disponibilidade"],["Observação ao dentista","observacao_admin"]]) campo(card,label,d[key]);
   campo(card,"Situação",rotulos[d.status_aprovacao]||d.status_aprovacao); campo(card,"Última análise",dataBR(d.data_ultima_analise)); campo(card,"Verificação CRO",dataBR(d.data_verificacao_cro)); campo(card,"Autorização de publicação",d.autorizacao_publicacao?"Sim":"Não"); campo(card,"Declaração de veracidade",d.declaracao_veracidade?"Sim":"Não");
   const foto=d.foto_url; if(foto) campo(card,"URL da foto",foto);
   for(const [status,label] of [["aprovado",d.status_aprovacao==="suspenso"?"Reativar":"Aprovar"],["correcao","Solicitar correção"],["reprovado","Reprovar"],["suspenso","Suspender"],["pendente","Retornar à análise"]]){
@@ -255,6 +255,6 @@ await carregar();
 iniciar();
 
 </script>
-<footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
+<footer>Odonto em Casa · Saúde domiciliar</footer>
 </body>
 </html>

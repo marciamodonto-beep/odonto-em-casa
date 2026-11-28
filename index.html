@@ -12,28 +12,19 @@
 <header>
 <h1>ODONTO EM CASA</h1>
 <p>Área do profissional</p>
-<nav aria-label="Navegação principal"><a href="buscar.html">Buscar dentistas</a></nav>
+<nav aria-label="Navegação principal"><a href="buscar.html">Buscar profissionais</a></nav>
 </header>
 
 <main>
-<h2>Cadastro de dentistas</h2>
+<h2>Criar conta profissional</h2>
 
-<label for="nome">Nome completo</label>
-<input id="nome" placeholder="Nome completo" required>
-<label for="cro">Número do CRO</label>
-<input id="cro" placeholder="Número do CRO" required>
-<label for="estado">Estado</label>
-<input id="estado" placeholder="Estado" required>
-<label for="cidade">Cidade</label>
-<input id="cidade" placeholder="Cidade" required>
-<label for="especialidade">Especialidade</label>
-<input id="especialidade" placeholder="Especialidade" required>
+<p>Cadastro disponível inicialmente para cirurgiões-dentistas. As demais categorias serão liberadas após validação. Complete seu perfil profissional após entrar.</p>
 <label for="email">E-mail</label>
 <input id="email" type="email" placeholder="E-mail" required>
 <label for="senha">Senha</label>
 <input id="senha" type="password" placeholder="Senha" required>
 
-<button id="btnCadastro" type="button" onclick="cadastrarDentista()">Criar minha conta</button>
+<button id="btnCadastro" type="button" onclick="cadastrarProfissional()">Criar minha conta</button>
 
 <hr>
 
@@ -61,16 +52,11 @@ supabaseUrl,
 supabaseKey
 );
 
-  async function cadastrarDentista() {
-const nome = document.getElementById("nome").value.trim();
-const cro = document.getElementById("cro").value.trim();
-const estado = document.getElementById("estado").value.trim();
-const cidade = document.getElementById("cidade").value.trim();
-const especialidade = document.getElementById("especialidade").value.trim();
+  async function cadastrarProfissional() {
 const email = document.getElementById("email").value.trim();
 const senha = document.getElementById("senha").value;
 
-if (!nome || !cro || !estado || !cidade || !especialidade || !email || !senha) {
+if (!email || !senha) {
 alert("Preencha todos os campos.");
 return;
 }
@@ -112,7 +98,7 @@ return;
 window.location.href="painel.html";
 }
  </script>
-<footer>Odonto em Casa · Atendimento odontológico domiciliar</footer>
+<footer>Odonto em Casa · Saúde domiciliar</footer>
 </body>
 </html>
 
